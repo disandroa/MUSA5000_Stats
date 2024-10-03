@@ -303,6 +303,61 @@
   
   # chloropleth maps ----
   {
+    # Median House Value as single figure
+    chloro_lnmedhval <- regdata_shp %>% 
+      ggplot() +
+      geom_sf(aes(fill = LNMEDHVAL)) +
+      theme_void() +
+      scale_fill_viridis_c(option = "magma",
+                           name = "Log Med. House Val.",
+                           na.value = "grey") +
+      labs(title = "Median House Values (log-transformed) in Philadelphia",
+           caption = "Fig. XX")
+    
+    # PCTVACANT
+    chloro_pctvac <- regdata_shp %>% 
+      ggplot() +
+      geom_sf(aes(fill = PCTVACANT)) +
+      theme_void() +
+      scale_fill_viridis_c(option = "magma",
+                           name = "Pct Vacant",
+                           na.value = "grey") +
+      labs(title = "Proportion of housing units in Philadelphia that are vacant")
+    
+    # PCTSINGLES
+    chloro_pctsing <- regdata_shp %>% 
+      ggplot() +
+      geom_sf(aes(fill = PCTSINGLES)) +
+      theme_void() +
+      scale_fill_viridis_c(option = "magma",
+                           name = "Pct Single Unit",
+                           na.value = "grey") +
+      labs(title = "Percent of housing units that are detached single family houses")
+    
+    # PCTBACHMOR
+    chloro_pctbach <- regdata_shp %>% 
+      ggplot() +
+      geom_sf(aes(fill = PCTBACHMOR)) +
+      theme_void() +
+      scale_fill_viridis_c(option = "magma",
+                           name = "Pct Bach.",
+                           na.value = "grey") +
+      labs(title = "Proportion of residents with at least a Bachelor's Degree")
+    
+    # LNNBELPOV
+    chloro_lnnbelpov <- regdata_shp %>% 
+      ggplot() +
+      geom_sf(aes(fill = LNNBELPOV)) +
+      theme_void() +
+      scale_fill_viridis_c(option = "magma",
+                           name = "Log # of Units\nBelow Poverty Level",
+                           na.value = "grey") +
+      labs(title = "Number of households living in poverty (log-transformed)")
+    
+    # display all four figures in one
+    grid.arrange(chloro_pctbach, chloro_pctvac, chloro_pctsing, chloro_lnnbelpov,
+                 ncol = 2,
+                 top = textGrob("Chloropleth Maps of Predictors", gp = gpar(fontsize = 16, fontface = "bold")))
     
   }
   
