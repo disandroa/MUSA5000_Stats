@@ -1,0 +1,243 @@
+---
+title: "stat hw1"
+author: "solano, fasullo, di sandro"
+date: "2024-09-30"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(sf)
+library(FNN)
+library(grid)
+library(gridExtra)
+library(ggcorrplot)
+library(rmarkdown)
+library(pander)
+library(Hmisc)
+library(car)
+library(DAAG)
+library(MASS)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r load_data}
+regression_data <- read.csv("data/RegressionData.csv")
+regression_shp <- st_read("data/Lecture 1 - RegressionData.shp/RegressionData.shp")
+options(scipen = 999)
+```
+
+
+``` {r look_at}
+summary(regression_data)
+
+```
+
+``` {r hist_make}
+hist(regression_data$MEDHVAL)
+
+hist(regression_data$PCTBACHMOR)
+
+hist(regression_data$NBELPOV100)
+
+hist(regression_data$PCTVACANT)
+
+hist(regression_data$PCTSINGLES)
+
+```
+
+```{r}
+summary_df <- data.frame(variable=c("Median House Value", "Num, HH in Poverty",
+                                    "Pct. Bachelors", "pct Vacant Houses", "pct single house units"),
+                         mean=c(mean(regression_data$MEDHVAL), mean(regression_data$NBELPOV100),
+                                mean(regression_data$PCTBACHMOR), mean(regression_data$PCTVACANT),
+                                mean(regression_data$PCTSINGLES)),
+                         stdev=c(sd(regression_data$MEDHVAL), sd(regression_data$NBELPOV100),
+                                sd(regression_data$PCTBACHMOR), sd(regression_data$PCTVACANT),
+                                sd(regression_data$PCTSINGLES)))
+```
+
+
+```{r}
+regression_data$LNMEDHVAL <- log(regression_data$MEDHVAL)
+regression_data$LNPCBACHMORE <- log(1+regression_data$PCTBACHMOR)
+regression_data$LNNBELPOV100 <- log(1+regression_data$NBELPOV100)
+regression_data$LNPCTVACANT <- log(1+regression_data$PCTVACANT)
+regression_data$LNPCTSINGLES <- log(1+regression_data$PCTSINGLES)
+
+regression_shp$LNMEDHVAL <- log(regression_data$MEDHVAL)
+regression_shp$LNPCBACHMORE <- log(1+regression_data$PCTBACHMOR)
+regression_shp$LNNBELPOV100 <- log(1+regression_data$NBELPOV100)
+
+```
+
+
+```{r}
+hist(regression_data$LNMEDHVAL)
+
+hist(regression_data$LNPCBACHMORE)
+
+hist(regression_data$LNNBELPOV100)
+
+hist(regression_data$LNPCTVACANT)
+
+hist(regression_data$LNPCTSINGLES)
+```
+
+
+
+Note that the dependent variable does look more or less normal after the transformation – hence, LNMEDHVAL will be used as the dependent variable in the regression analysis. You will also see that for the predictors, the logarithmic transformation only helps normalize the NBELPOV100 variable (so we will use LNNBELPOV100 in the subsequent analyses). The other variables have a large spike at zero (i.e., zero-inflated distributions) after the transformations, so we will use the original, untransformed PCBACHMORE, PCTVACANT, and PCTSINGLES variables in the regression.
+
+```{r}
+ggplot(regression_data) + 
+  geom_point(aes(x=LNMEDHVAL, y=LNNBELPOV100))
+
+ggplot(regression_data) + 
+  geom_point(aes(x=LNMEDHVAL, y=PCTBACHMOR))
+
+ggplot(regression_data) + 
+  geom_point(aes(x=LNMEDHVAL, y=PCTVACANT))
+
+ggplot(regression_data) + 
+  geom_point(aes(x=LNMEDHVAL, y=PCTSINGLES))
+```
+
+```{r}
+predictors <- regression_data %>% select(LNNBELPOV100,PCTVACANT,PCTSINGLES,PCTBACHMOR)
+
+rcorr(as.matrix(predictors), type="pearson") 
+```
+
+
+```{r}
+ggcorrplot(cor(predictors), lab=TRUE)
+```
+
+
+```{r}
+fit_data <- lm(LNMEDHVAL ~ LNNBELPOV100 + PCTVACANT + PCTSINGLES + PCTBACHMOR, data=regression_data)
+summary(fit_data)
+```
+```{r}
+anova(fit_data)
+```
+
+```{r}
+vif(fit_data)
+```
+
+```{r}
+predicted <- fitted(fit_data)
+resid <- residuals(fit_data)
+resid_std <- rstandard(fit_data)
+```
+
+
+```{r}
+ggplot(regression_shp) +
+      geom_sf(aes(fill = LNMEDHVAL))+
+      scale_fill_distiller(palette="YlGnBu")+
+      labs(title = "Median House Values, log transformed")+
+      theme_void()
+```
+
+
+```{r}
+MapVacant <- ggplot(regression_shp) +
+      geom_sf(aes(fill = PCTVACANT))+
+      scale_fill_distiller(palette="YlGnBu")+
+      labs(title = "Percent of housing units that are vacant")+
+      theme_void()
+
+MapSingles <- ggplot(regression_shp) +
+      geom_sf(aes(fill = PCTSINGLES))+
+      scale_fill_distiller(palette="YlGnBu")+
+      labs(title = "Percent single homes")+
+      theme_void()
+
+BachMap <- ggplot(regression_shp) +
+      geom_sf(aes(fill = PCTBACHMOR))+
+      scale_fill_distiller(palette="YlGnBu")+
+      labs(title = "Percent with bachelor's degree or higher")+
+      theme_void()
+
+PovMap <- ggplot(regression_shp) +
+      geom_sf(aes(fill = LNNBELPOV))+
+      scale_fill_distiller(palette="YlGnBu")+
+      labs(title = "Households in poverty, log transformed")+
+      theme_void()
+
+grid.arrange(MapVacant, MapSingles, BachMap, PovMap, nrow=2)
+```
+
+```{r}
+plot(x=predicted, y=resid_std)
+```
+
+```{r}
+hist(resid)
+```
+
+
+```{r}
+stepm <- stepAIC(fit_data, direction="both")
+stepm$anova
+```
+
+
+```{r}
+cv <- CVlm(data=regression_data, form.lm=fit_data, m=5)				        #m=5 sets it to 5 folds
+#Extracting MSEs
+mse <- attr(cv, "ms")
+rmse <- sqrt(mse)					                      #Obtaining RMSE for model 1
+```
+
+
+
+
+
+
+```{r}
+rmse <- sqrt(mse)						  
+rmse
+```
+
+
+
+```{r}
+fit2 <- lm(LNMEDHVAL ~ PCTVACANT + MEDHHINC, data=regression_data)
+
+cv2 <- CVlm(data=regression_data, fit2, m=5)				        #m=5 sets it to 5 folds
+#Extracting MSEs
+mse2 <- attr(cv2, "ms")
+rmse2 <- sqrt(mse2)					                      #Obtaining RMSE for model 2
+rmse2
+```
+
+```{r}
+rmse2
+```
+
+
+
+```{r}
+anova(fit_data, fit2)
+```
+
+
+```{r}
+step2 <- stepAIC(fit2, direction="both")
+step2$anova
+```
+
+```{r}
+anova(stepm, step2)
+```
+

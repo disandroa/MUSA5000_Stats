@@ -397,7 +397,7 @@
   
   # stepwise regression ----
   {
-    step_reg <- step(model1)
+    step_reg <- step(model1, direction = "both")
     
     step_reg$anova
     
