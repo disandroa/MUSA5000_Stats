@@ -6,7 +6,7 @@
 # set-up ----
 {
   # set working directory (from stats project)
-  # setwd("homework/hw01/")
+  # setwd("MUSA5000_Stats/hw01/")
   
   # load packages
   library(tidyverse)
@@ -16,6 +16,8 @@
   library(gridExtra)
   library(grid)
   library(ggcorrplot)
+  library(MASS)
+  library(DAAG)
   
   # functions
   `%notin%` <- Negate(`%in%`)
@@ -365,5 +367,141 @@
 
 # regression analysis ----
 {
+  ## linear regression ----
+  {
+    model1 <- lm(LNMEDHVAL ~ PCTVACANT + PCTSINGLES + PCTBACHMOR + LNNBELPOV100, regdata_log)
+    
+    model1_sum <- summary(model1)
+    model1_anova <- anova(model1)
+    
+    model1_res <- regdata_log %>% 
+      mutate(predicted_LNMEDHVAL = fitted(model1),
+             predicted_MEDHVAL = exp(predicted_LNMEDHVAL),
+             residual = resid(model1),
+             std_residual = rstandard(model1))
+    
+  }
   
+  # scatterplot ----
+  {
+    scatter_std_resid <- model1_res %>% 
+      ggplot() +
+      geom_hline(yintercept = 0, color = "#F1605DFF") +
+      geom_point(aes(x = predicted_LNMEDHVAL, y = std_residual), color = "#451077FF") +
+      theme_minimal() +
+      labs(title = "Standardized Residuals of Regression Model as a response of Predicted Values",
+           x = "Predicted Median House Value (log-transformed)",
+           y = "Standardized Residual")
+    
+  }
+  
+  # stepwise regression ----
+  {
+    step_reg <- step(model1)
+    
+    step_reg$anova
+    
+  }
+  
+  # 5-fold CV ----
+  {
+    model1_CV <- CVlm(data = regdata_log,
+                      form.lm = formula(LNMEDHVAL ~ PCTVACANT + PCTSINGLES + PCTBACHMOR + LNNBELPOV100),
+                      m = 5,
+                      seed = 217,
+                      printit = F) %>% 
+      mutate(error = LNMEDHVAL - cvpred,
+             error_sq = error^2)
+    
+    model1_sse <- sum(model1_CV$error_sq) # 232.3228
+    model1_mse <- model1_sse/nrow(regdata_log) # 0.1350714
+    model1_rmse <- sqrt(model1_mse) # 0.3675206
+    
+  }
+  
+  # repeat for model2 (only PCTVACANT and MEDHHINCOME as predictors) ----
+  {
+    ### linear regression ----
+    {
+      model2 <- lm(LNMEDHVAL ~ PCTVACANT + MEDHHINC, regdata_log)
+      
+      model2_sum <- summary(model2)
+      model2_anova <- anova(model2)
+      
+      model2_res <- regdata_log %>% 
+        mutate(predicted_LNMEDHVAL = fitted(model2),
+               predicted_MEDHVAL = exp(predicted_LNMEDHVAL),
+               residual = resid(model2),
+               std_residual = rstandard(model2))
+      
+    }
+    
+    ## scatterplot ----
+    {
+      # scatter_std_resid2 <- model2_res %>% 
+      #   ggplot() +
+      #   geom_hline(yintercept = 0, color = "#F1605DFF") +
+      #   geom_point(aes(x = predicted_LNMEDHVAL, y = std_residual), color = "#451077FF") +
+      #   theme_minimal() +
+      #   labs(title = "Standardized Residuals of Regression Model as a response of Predicted Values",
+      #        x = "Predicted Median House Value (log-transformed)",
+      #        y = "Standardized Residual")
+      
+    }
+    
+    ## stepwise regression ----
+    {
+      # step_reg <- step(model2)
+      # 
+      # step_reg$anova
+      
+    }
+    
+    ## 5-fold CV ----
+    {
+      model2_CV <- CVlm(data = regdata_log,
+                        form.lm = formula(LNMEDHVAL ~ PCTVACANT + MEDHHINC),
+                        m = 5,
+                        seed = 217,
+                        printit = F) %>% 
+        mutate(error = LNMEDHVAL - cvpred,
+               error_sq = error^2)
+      
+      model2_sse <- sum(model2_CV$error_sq) # 338.7915
+      model2_mse <- model2_sse/nrow(regdata_log) # 0.1969718
+      model2_rmse <- sqrt(model2_mse) # 0.4438151
+      
+    }
+    
+  }
+  
+  # histogram of std_resid ----
+  {
+    hist_std_resid <- ggplot(model1_res) +
+      geom_histogram(aes(x = std_residual), fill = "#451077FF") +
+      theme_minimal() +
+      labs(title = "Distribution of Standardized Regression Residual",
+           # caption = "Figure XX.",
+           x = "Standardized Regression Residual",
+           y = "Count")
+  }
+  
+  # chrolopleth map  of std_resid----
+  {
+    chloro_std_resid <- left_join(regdata_shp,
+                                  model1_res %>% 
+                                    dplyr::select(POLY_ID,LNNBELPOV100,predicted_LNMEDHVAL:std_residual),
+                                  by = "POLY_ID") %>% 
+      ggplot() +
+      geom_sf(aes(fill = std_residual)) +
+      theme_void() +
+      scale_fill_viridis_c(option = "magma",
+                           name = "Standardized Regression Residual",
+                           na.value = "grey") +
+      labs(title = "Standardized Regression Residual",
+           caption = "Fig. XX")
+    
+    
+    # change to diverging color palette
+  }
 }
