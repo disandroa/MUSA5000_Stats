@@ -209,68 +209,62 @@ regdata_log <- regdata %>%
          LNPCTSINGLES = log(1 + PCTSINGLES),
          LNMEDHHINC = log(MEDHHINC))
 
-      # LNMEDHVAL
-      hist_lnmedhval <- ggplot(regdata_log) +
-        geom_histogram(aes(x = LNMEDHVAL), fill = "#451077FF") +
-        theme_minimal() +
-        labs(title = "Distribution of Log-transformed Median House Value",
-             subtitle = "Philadelphia Block Groups",
-             caption = "Figure XX.",
-             x = "Log-transformed Median House Value",
-             y = "Count")
-      
-      # log PCTBACHMOR
-      hist_lnpctbach <- regdata_log %>% 
-        ggplot() +
-        geom_histogram(aes(x = LNPCBACHMORE), fill = "#451077FF") +
-        theme_minimal() +
-        labs(title = "Distribution of Log-transformed Proportion of residents with at least a Bachelor's Degree",
-             subtitle = "Philadelphia Block Groups",
-             caption = "Figure XX.",
-             x = "Log-transformed Proportion of residents with at least a Bachelor's Degree",
-             y = "Count")
-      
-      # log MEDHHINC
-      hist_lnmedhhinc <- ggplot(regdata_log) +
-        geom_histogram(aes(x = LNMEDHHINC), fill = "#451077FF") +
-        theme_minimal() +
-        labs(title = "Distribution of Log-transformed Median Household Income",
-             subtitle = "Philadelphia Block Groups",
-             caption = "Figure XX.",
-             x = "Log-transformed Median Household Income",
-             y = "Count")
-      
-      # log PCTVACANT
-      hist_lnpctvac <- regdata_log %>% 
-        ggplot() +
-        geom_histogram(aes(x = LNPCTVACANT), fill = "#451077FF") +
-        theme_minimal() +
-        labs(title = "Distribution of Log-transformed Proportion of housing units that are vacant",
-             subtitle = "Philadelphia Block Groups",
-             caption = "Figure XX.",
-             x = "Log-transformed Proportion of housing units that are vacant",
-             y = "Count")
-      
-      # log PCTSINGLES
-      hist_lnpctsing <- regdata_log %>% 
-        ggplot() +
-        geom_histogram(aes(x = LNPCTSINGLES), fill = "#451077FF") +
-        theme_minimal() +
-        labs(title = "Distribution of Log-transformed Percent of housing units that are detached single family houses",
-             subtitle = "Philadelphia Block Groups",
-             caption = "Figure XX.",
-             x = "Log-transformed Percent of housing units that are detached single family houses",
-             y = "Count")
-      
-      # log NBELPOV100
-      hist_lnnbelpov <- ggplot(regdata_log) +
-        geom_histogram(aes(x = LNNBELPOV100), fill = "#451077FF") +
-        theme_minimal() +
-        labs(title = "Distribution of Log-transformed Number of households living in poverty",
+# LNMEDHVAL
+hist_lnmedhval <- ggplot(regdata_log) +
+  geom_histogram(aes(x = LNMEDHVAL), fill = "#451077FF") +
+  theme_minimal() +
+  labs(title = "Distribution of Log-transformed Median House Value",
        subtitle = "Philadelphia Block Groups",
-       caption = "Figure XX.",
-       x = "Log-transformed Number of households living in poverty",
+       x = "Log-transformed Median House Value",
        y = "Count")
+
+# log PCTBACHMOR
+hist_lnpctbach <- regdata_log %>% 
+  ggplot() +
+  geom_histogram(aes(x = LNPCBACHMORE), fill = "#451077FF") +
+  theme_minimal() +
+  labs(title = "Distribution of Log-transformed Proportion of residents with at least a Bachelor's Degree",
+       subtitle = "Philadelphia Block Groups",
+       x = "Log-transformed Proportion of residents with at least a Bachelor's Degree",
+       y = "Count")
+      
+# log MEDHHINC
+hist_lnmedhhinc <- ggplot(regdata_log) +
+  geom_histogram(aes(x = LNMEDHHINC), fill = "#451077FF") +
+  theme_minimal() +
+  labs(title = "Distribution of Log-transformed Median Household Income",
+       subtitle = "Philadelphia Block Groups",
+       x = "Log-transformed Median Household Income",
+       y = "Count")
+
+# log PCTVACANT
+hist_lnpctvac <- regdata_log %>% 
+  ggplot() +
+  geom_histogram(aes(x = LNPCTVACANT), fill = "#451077FF") +
+  theme_minimal() +
+  labs(title = "Distribution of Log-transformed Proportion of housing units that are vacant",
+       subtitle = "Philadelphia Block Groups",
+       x = "Log-transformed Proportion of housing units that are vacant",
+       y = "Count")
+      
+# log PCTSINGLES
+hist_lnpctsing <- regdata_log %>% 
+  ggplot() +
+  geom_histogram(aes(x = LNPCTSINGLES), fill = "#451077FF") +
+  theme_minimal() +
+  labs(title = "Distribution of Log-transformed Percent of housing units that are detached single family houses",
+       subtitle = "Philadelphia Block Groups",
+       x = "Log-transformed Percent of housing units that are detached single family houses",
+       y = "Count")
+      
+# log NBELPOV100
+hist_lnnbelpov <- ggplot(regdata_log) +
+  geom_histogram(aes(x = LNNBELPOV100), fill = "#451077FF") +
+  theme_minimal() +
+  labs(title = "Distribution of Log-transformed Number of households living in poverty",
+  subtitle = "Philadelphia Block Groups",
+  x = "Log-transformed Number of households living in poverty",
+  y = "Count")
 
 
 ```
