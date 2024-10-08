@@ -1,0 +1,427 @@
+---
+title: "Predicting Median House Value in Philadelphia"
+author: "Akira Di Sandro, Sofia Fasullo, Amy Solano"
+date: "2024-10-14"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T, eval = T, warning = F, message = F)
+
+# get rid of scientific notation
+options(scipen = 999)
+
+# load appropriate packages
+library(tidyverse)
+library(sf)
+library(FNN)
+library(grid)
+library(gridExtra)
+library(kableExtra)
+library(ggcorrplot)
+library(rmarkdown)
+library(pander)
+library(Hmisc)
+library(car)
+library(DAAG)
+library(MASS)
+```
+
+# Introduction
+
+**intro paragraphs**
+
+```{r load_data}
+regdata <- read.csv("RegressionData.csv")
+regshp <- st_read("Lecture 1 - RegressionData.shp/RegressionData.shp")
+
+```
+
+# Methods
+
+## Data Cleaning
+
+
+## Exploratory Data Analysis
+
+[describe variables]
+
+[formula for sample correlation coefficient]
+
+## Multiple Regression Analysis
+
+[specific regression equation for this problem]
+
+[state hypothesis being tested]
+
+## Additional Analyses
+
+[stepwise regression]
+
+[k-fold cross-validation]
+
+## Software
+
+
+# Results
+
+## Exploratory Results
+
+[describe summary stats]
+
+```{r sum_stats}
+sumstats <- regdata %>% 
+  summarise(
+    mean_MEDHVAL = mean(MEDHVAL),
+    sd_MEDHVAL = sd(MEDHVAL),
+    mean_PCTBACHMOR = mean(PCTBACHMOR),
+    sd_PCTBACHMOR = sd(PCTBACHMOR),
+    mean_MEDHHINC = mean(MEDHHINC),
+    sd_MEDHHINC = sd(MEDHHINC),
+    mean_PCTVACANT = mean(PCTVACANT),
+    sd_PCTVACANT = sd(PCTVACANT),
+    mean_PCTSINGLES = mean(PCTSINGLES),
+    sd_PCTSINGLES = sd(PCTSINGLES),
+    mean_NBELPOV100 = mean(NBELPOV100),
+    sd_NBELPOV100 = sd(NBELPOV100),
+    )
+    
+means <- sumstats %>% 
+  pivot_longer(cols = all_of(starts_with("mean_")),
+               names_to = "variable",
+               values_to = "Mean",
+               names_prefix = "mean_") %>% 
+  dplyr::select(variable:Mean)
+
+
+sds <- sumstats %>% 
+  pivot_longer(cols = all_of(starts_with("sd_")),
+               names_to = "variable",
+               values_to = "SD",
+               names_prefix = "sd_") %>% 
+  dplyr::select(variable:SD)
+
+# create a clean dataframe for table
+sumstats_tab <- left_join(means, sds, by = "variable") %>% 
+  rename(rowname = 1) %>% 
+  column_to_rownames() %>% 
+  t() %>% 
+  data.frame() %>% 
+  mutate(`Median House Value (MEDHVAL)` = paste0("$",format(round(MEDHVAL, 2), big.mark = ",", nsmall = 2)),
+         `Pct Bachelor or more (PCTBACHMOR)` = paste0(format(round(PCTBACHMOR, 1), nsmall = 1), "%"),
+         `Median Household Income (MEDHHINC)` = paste0("$",format(round(MEDHHINC, 2), big.mark = ",", nsmall = 2)),
+         `Pct Vacant (PCTVACANT)` = paste0(format(round(PCTVACANT, 1), nsmall = 1), "%"),
+         `Pct Single Unit (PCTSINGLES)` = paste0(format(round(PCTSINGLES, 1), nsmall = 1), "%"),
+         `Units Below Poverty level (NBELPOV100)` = format(round(NBELPOV100), nsmall = 0),
+         .keep = "unused") %>% 
+  t() %>% 
+  data.frame() %>% 
+  rownames_to_column(var = "Variable")
+ 
+sumstats_tab %>% 
+  kbl(caption = "Table 1. Summary Statistics of Dependent and Independent Variables",
+      align = "lcc") %>% 
+  kable_styling() %>%
+  kable_classic(full_width = F, html_font = "Cambria") 
+
+```
+
+[normality of variables]
+
+```{r histograms}
+# MEDHVAL
+hist_medhval <- ggplot(regdata) +
+  geom_histogram(aes(x = MEDHVAL), fill = "#451077FF") +
+  theme_minimal() +
+  labs(title = "Distribution of Median House Value",
+       subtitle = "Philadelphia Block Groups",
+       x = "Median House Value",
+       y = "Count") +
+  scale_x_continuous(labels = scales::dollar)
+
+# PCTBACHMOR
+hist_pctbach <- regdata %>% 
+  mutate(PCTBACHMOR = PCTBACHMOR / 100) %>% 
+  ggplot() +
+  geom_histogram(aes(x = PCTBACHMOR), fill = "#451077FF") +
+  theme_minimal() +
+  labs(title = "Distribution of Proportion of residents with at least a Bachelor's Degree",
+       subtitle = "Philadelphia Block Groups",
+       x = "Proportion of residents with at least a Bachelor's Degree",
+       y = "Count") +
+  scale_x_continuous(labels = scales::percent)
+
+# MEDHHINC
+hist_medhhinc <- ggplot(regdata) +
+  geom_histogram(aes(x = MEDHHINC), fill = "#451077FF") +
+  theme_minimal() +
+  labs(title = "Distribution of Median Household Income",
+       subtitle = "Philadelphia Block Groups",
+       x = "Median Household Income",
+       y = "Count") +
+  scale_x_continuous(labels = scales::dollar)
+
+# PCTVACANT
+hist_pctvac <- regdata %>% 
+  mutate(PCTVACANT = PCTVACANT / 100) %>% 
+  ggplot() +
+  geom_histogram(aes(x = PCTVACANT), fill = "#451077FF") +
+  theme_minimal() +
+  labs(title = "Distribution of Proportion of housing units that are vacant",
+       subtitle = "Philadelphia Block Groups",
+       x = "Proportion of housing units that are vacant",
+       y = "Count") +
+  scale_x_continuous(labels = scales::percent)
+
+# PCTSINGLES
+hist_pctsing <- regdata %>% 
+  mutate(PCTSINGLES = PCTSINGLES / 100) %>% 
+  ggplot() +
+  geom_histogram(aes(x = PCTSINGLES), fill = "#451077FF") +
+  theme_minimal() +
+  labs(title = "Distribution of Percent of housing units that are detached single family houses",
+       subtitle = "Philadelphia Block Groups",
+       x = "Percent of housing units that are detached single family houses",
+       y = "Count") +
+  scale_x_continuous(labels = scales::percent)
+
+# NBELPOV100
+hist_nbelpov <- ggplot(regdata) +
+  geom_histogram(aes(x = NBELPOV100), fill = "#451077FF") +
+  theme_minimal() +
+  labs(title = "Distribution of Number of households living in poverty",
+       subtitle = "Philadelphia Block Groups",
+       caption = "Figure XX.",
+       x = "Number of households living in poverty",
+       y = "Count")
+
+# log-transformed variables
+regdata_log <- regdata %>% 
+  mutate(LNMEDHVAL = log(MEDHVAL),
+         LNPCBACHMORE = log(1 + PCTBACHMOR),
+         LNNBELPOV100 = log(1 + NBELPOV100),
+         LNPCTVACANT = log(1 + PCTVACANT),
+         LNPCTSINGLES = log(1 + PCTSINGLES),
+         LNMEDHHINC = log(MEDHHINC))
+
+      # LNMEDHVAL
+      hist_lnmedhval <- ggplot(regdata_log) +
+        geom_histogram(aes(x = LNMEDHVAL), fill = "#451077FF") +
+        theme_minimal() +
+        labs(title = "Distribution of Log-transformed Median House Value",
+             subtitle = "Philadelphia Block Groups",
+             caption = "Figure XX.",
+             x = "Log-transformed Median House Value",
+             y = "Count")
+      
+      # log PCTBACHMOR
+      hist_lnpctbach <- regdata_log %>% 
+        ggplot() +
+        geom_histogram(aes(x = LNPCBACHMORE), fill = "#451077FF") +
+        theme_minimal() +
+        labs(title = "Distribution of Log-transformed Proportion of residents with at least a Bachelor's Degree",
+             subtitle = "Philadelphia Block Groups",
+             caption = "Figure XX.",
+             x = "Log-transformed Proportion of residents with at least a Bachelor's Degree",
+             y = "Count")
+      
+      # log MEDHHINC
+      hist_lnmedhhinc <- ggplot(regdata_log) +
+        geom_histogram(aes(x = LNMEDHHINC), fill = "#451077FF") +
+        theme_minimal() +
+        labs(title = "Distribution of Log-transformed Median Household Income",
+             subtitle = "Philadelphia Block Groups",
+             caption = "Figure XX.",
+             x = "Log-transformed Median Household Income",
+             y = "Count")
+      
+      # log PCTVACANT
+      hist_lnpctvac <- regdata_log %>% 
+        ggplot() +
+        geom_histogram(aes(x = LNPCTVACANT), fill = "#451077FF") +
+        theme_minimal() +
+        labs(title = "Distribution of Log-transformed Proportion of housing units that are vacant",
+             subtitle = "Philadelphia Block Groups",
+             caption = "Figure XX.",
+             x = "Log-transformed Proportion of housing units that are vacant",
+             y = "Count")
+      
+      # log PCTSINGLES
+      hist_lnpctsing <- regdata_log %>% 
+        ggplot() +
+        geom_histogram(aes(x = LNPCTSINGLES), fill = "#451077FF") +
+        theme_minimal() +
+        labs(title = "Distribution of Log-transformed Percent of housing units that are detached single family houses",
+             subtitle = "Philadelphia Block Groups",
+             caption = "Figure XX.",
+             x = "Log-transformed Percent of housing units that are detached single family houses",
+             y = "Count")
+      
+      # log NBELPOV100
+      hist_lnnbelpov <- ggplot(regdata_log) +
+        geom_histogram(aes(x = LNNBELPOV100), fill = "#451077FF") +
+        theme_minimal() +
+        labs(title = "Distribution of Log-transformed Number of households living in poverty",
+       subtitle = "Philadelphia Block Groups",
+       caption = "Figure XX.",
+       x = "Log-transformed Number of households living in poverty",
+       y = "Count")
+
+
+```
+
+
+
+Note that the dependent variable does look more or less normal after the transformation – hence, LNMEDHVAL will be used as the dependent variable in the regression analysis. You will also see that for the predictors, the logarithmic transformation only helps normalize the NBELPOV100 variable (so we will use LNNBELPOV100 in the subsequent analyses). The other variables have a large spike at zero (i.e., zero-inflated distributions) after the transformations, so we will use the original, untransformed PCBACHMORE, PCTVACANT, and PCTSINGLES variables in the regression.
+
+```{r}
+ggplot(regdata) + 
+  geom_point(aes(x=LNMEDHVAL, y=LNNBELPOV100))
+
+ggplot(regdata) + 
+  geom_point(aes(x=LNMEDHVAL, y=PCTBACHMOR))
+
+ggplot(regdata) + 
+  geom_point(aes(x=LNMEDHVAL, y=PCTVACANT))
+
+ggplot(regdata) + 
+  geom_point(aes(x=LNMEDHVAL, y=PCTSINGLES))
+```
+
+```{r}
+predictors <- regdata %>% select(LNNBELPOV100,PCTVACANT,PCTSINGLES,PCTBACHMOR)
+
+rcorr(as.matrix(predictors), type="pearson") 
+```
+
+
+```{r}
+ggcorrplot(cor(predictors), lab=TRUE)
+```
+
+
+```{r}
+fit_data <- lm(LNMEDHVAL ~ LNNBELPOV100 + PCTVACANT + PCTSINGLES + PCTBACHMOR, data=regdata)
+summary(fit_data)
+```
+```{r}
+anova(fit_data)
+```
+
+```{r}
+vif(fit_data)
+```
+
+```{r}
+predicted <- fitted(fit_data)
+resid <- residuals(fit_data)
+resid_std <- rstandard(fit_data)
+```
+
+
+```{r}
+ggplot(regshp) +
+      geom_sf(aes(fill = LNMEDHVAL))+
+      scale_fill_distiller(palette="YlGnBu")+
+      labs(title = "Median House Values, log transformed")+
+      theme_void()
+```
+
+
+```{r}
+MapVacant <- ggplot(regshp) +
+      geom_sf(aes(fill = PCTVACANT))+
+      scale_fill_distiller(palette="YlGnBu")+
+      labs(title = "Percent of housing units that are vacant")+
+      theme_void()
+
+MapSingles <- ggplot(regshp) +
+      geom_sf(aes(fill = PCTSINGLES))+
+      scale_fill_distiller(palette="YlGnBu")+
+      labs(title = "Percent single homes")+
+      theme_void()
+
+BachMap <- ggplot(regshp) +
+      geom_sf(aes(fill = PCTBACHMOR))+
+      scale_fill_distiller(palette="YlGnBu")+
+      labs(title = "Percent with bachelor's degree or higher")+
+      theme_void()
+
+PovMap <- ggplot(regshp) +
+      geom_sf(aes(fill = LNNBELPOV))+
+      scale_fill_distiller(palette="YlGnBu")+
+      labs(title = "Households in poverty, log transformed")+
+      theme_void()
+
+grid.arrange(MapVacant, MapSingles, BachMap, PovMap, nrow=2)
+```
+
+```{r}
+plot(x=predicted, y=resid_std)
+```
+
+```{r}
+hist(resid)
+```
+
+
+```{r}
+stepm <- stepAIC(fit_data, direction="both")
+stepm$anova
+```
+
+
+```{r}
+cv <- CVlm(data=regdata, form.lm=fit_data, m=5)				        #m=5 sets it to 5 folds
+#Extracting MSEs
+mse <- attr(cv, "ms")
+rmse <- sqrt(mse)					                      #Obtaining RMSE for model 1
+```
+
+
+
+
+
+
+```{r}
+rmse <- sqrt(mse)						  
+rmse
+```
+
+
+
+```{r}
+fit2 <- lm(LNMEDHVAL ~ PCTVACANT + MEDHHINC, data=regdata)
+
+cv2 <- CVlm(data=regdata, fit2, m=5)				        #m=5 sets it to 5 folds
+#Extracting MSEs
+mse2 <- attr(cv2, "ms")
+rmse2 <- sqrt(mse2)					                      #Obtaining RMSE for model 2
+rmse2
+```
+
+```{r}
+rmse2
+```
+
+
+
+```{r}
+anova(fit_data, fit2)
+```
+
+
+```{r}
+step2 <- stepAIC(fit2, direction="both")
+step2$anova
+```
+
+```{r}
+anova(stepm, step2)
+```
+
