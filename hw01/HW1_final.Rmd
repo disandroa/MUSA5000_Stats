@@ -36,7 +36,7 @@ library(MASS)
 
 **intro paragraphs**
 
-```{r load_data}
+```{r load_data, echo=F, include=F}
 regdata <- read.csv("RegressionData.csv")
 regshp <- st_read("Lecture 1 - RegressionData.shp/RegressionData.shp")
 
@@ -325,7 +325,7 @@ chloro_pctvac <- regshp %>%
                        name = "Pct Vacant",
                        na.value = "grey",
                        limits = c(0, 100)) +
-  labs(title = "% housing units that are vacant")
+  labs(title = "Percent housing units\nthat are vacant")
 
 # PCTSINGLES
 chloro_pctsing <- regshp %>% 
@@ -336,7 +336,7 @@ chloro_pctsing <- regshp %>%
                        name = "Pct Single Unit",
                        na.value = "grey",
                        limits = c(0, 100)) +
-  labs(title = "% housing units that are detached\nsingle family houses")
+  labs(title = "Percent housing units that are\ndetached single family houses")
 
 # PCTBACHMOR
 chloro_pctbach <- regshp %>% 
@@ -347,7 +347,7 @@ chloro_pctbach <- regshp %>%
                        name = "Pct Bach.",
                        na.value = "grey",
                        limits = c(0, 100)) +
-  labs(title = "% residents with at least a Bachelor's Degree")
+  labs(title = "Percent of residents with at\nleast a Bachelor's Degree")
 
 # LNNBELPOV
 chloro_lnnbelpov <- regshp %>% 
@@ -358,17 +358,17 @@ chloro_lnnbelpov <- regshp %>%
                        name = "Log Units",
                        na.value = "grey",
                        limits = c(0, 8)) +
-  labs(title = "# of households living in poverty (log-transformed)")
+  labs(title = "Number of households living\nin poverty (log-transformed)")
 
 ```
 
 
 ```{r medhval_chloro}
-
+chloro_lnmedhval
 ```
 
 
-```{r predictors_chloro, fig.height=10}
+```{r predictors_chloro, fig.height=8}
 # display all four figures in one
 grid.arrange(chloro_pctbach, chloro_pctvac, chloro_pctsing, chloro_lnnbelpov,
              ncol = 2,
@@ -401,4 +401,205 @@ cor_plot <- ggcorrplot(cormat,
 cor_plot
 
 ```
+
+
+
+## Regression Results
+
+### Regression Output
+
+```{r reg1}
+reg1 <- lm(LNMEDHVAL ~ PCTVACANT + PCTSINGLES + PCTBACHMOR + LNNBELPOV100, regdata_log)
+
+reg1_sum <- summary(reg1)
+reg1_anova <- anova(reg1)
+
+reg1_res <- regdata_log %>% 
+  mutate(predicted_LNMEDHVAL = fitted(reg1),
+         predicted_MEDHVAL = exp(predicted_LNMEDHVAL),
+         residual = resid(reg1),
+         std_residual = rstandard(reg1))
+
+reg1_sum
+```
+
+
+### Regression Assumptions Check
+
+[testing model assumptions -- we looked at variable distributions earlier]
+
+### Scatter Plots
+
+```{r scatter_setup}
+scatter_pctbach <- regdata_log %>% 
+  ggplot() +
+  geom_point(aes(x = PCTBACHMOR, y = LNMEDHVAL), color = "#451077FF") +
+  theme_minimal() +
+  labs(x = "Proportion of residents with at\nleast a Bachelor's Degree",
+       y = "Median House Value (Log-transformed)") 
+
+scatter_pctvac <- regdata_log %>% 
+  ggplot() +
+  geom_point(aes(x = PCTVACANT, y = LNMEDHVAL), color = "#451077FF") +
+  theme_minimal() +
+  labs(x = "Proportion of housing units that are vacant",
+       y = "Median House Value (Log-transformed)") 
+
+scatter_pctsing <- regdata_log %>% 
+  ggplot() +
+  geom_point(aes(x = PCTSINGLES, y = LNMEDHVAL), color = "#451077FF") +
+  theme_minimal() +
+  labs(x = "Percent of housing units that are\ndetached single family houses",
+       y = "Median House Value (Log-transformed)") 
+
+scatter_lnnbelpov <- regdata_log %>% 
+  ggplot() +
+  geom_point(aes(x = LNNBELPOV100, y = LNMEDHVAL), color = "#451077FF") +
+  theme_minimal() +
+  labs(x = "Number of households living\nin poverty (log-transformed)",
+       y = "Median House Value (Log-transformed)") 
+```
+
+
+```{r predictor_scatter, fig.height=8}
+# display all four figures in one
+grid.arrange(scatter_pctbach, scatter_pctvac, scatter_pctsing, scatter_lnnbelpov,
+             ncol = 2,
+             top = textGrob("Median House Value (log-transformed) as\na function of the Predictors", 
+                            gp = gpar(fontsize = 16, fontface = "bold")))
+
+```
+
+
+### Standardized Residuals
+
+```{r std_resid_hist}
+hist_std_resid <- ggplot(reg1_res) +
+  geom_histogram(aes(x = std_residual), fill = "#451077FF") +
+  theme_minimal() +
+  labs(title = "Distribution of Standardized Regression Residual",
+       x = "Standardized Regression Residual",
+       y = "Count")
+
+hist_std_resid
+
+```
+
+
+```{r std_resid_scatter}
+scatter_std_resid <- reg1_res %>% 
+  ggplot() +
+  geom_hline(yintercept = 0, color = "#F1605DFF") +
+  geom_point(aes(x = predicted_LNMEDHVAL, y = std_residual), color = "#451077FF") +
+  theme_minimal() +
+  labs(title = "Standardized Residuals of Regression Model as a response of Predicted Values",
+       x = "Predicted Median House Value (log-transformed)",
+       y = "Standardized Residual")
+
+scatter_std_resid
+
+```
+
+[discuss spatial autocorrelation of vars using chloropleths from before]
+
+
+```{r std_resid_chloro}
+chloro_std_resid <- left_join(regshp,
+                              reg1_res %>% 
+                                dplyr::select(POLY_ID,LNNBELPOV100,predicted_LNMEDHVAL:std_residual),
+                              by = "POLY_ID") %>% 
+  ggplot() +
+  geom_sf(aes(fill = std_residual)) +
+  theme_void() +
+  scale_fill_gradient2(name = "Stand. Res.",
+                       low = "#451077FF",
+                       mid = "white",
+                       high = "#F1605DFF",
+                       na.value = "grey",
+                       limits = c(-6.25, 6.25)) +
+  labs(title = "Standardized Regression Residual",
+       fill = "Stand. Res.")
+
+left_join(regshp,
+          reg1_res %>% 
+            dplyr::select(POLY_ID,LNNBELPOV100,predicted_LNMEDHVAL:std_residual),
+          by = "POLY_ID") %>% 
+  ggplot() +
+  geom_sf(aes(fill = std_residual)) +
+  theme_void() +
+  scale_fill_viridis_c(option = "magma",
+                       name = "Stand. Res.",
+                       na.value = "grey",
+                       limits = c(-6.25, 6.25)) +
+  labs(title = "Standardized Regression Residual",
+       fill = "Stand. Res.")
+
+
+chloro_std_resid
+    
+```
+
+[discuss spatial patterns of stand. resids]
+
+### Stepwise Regression
+
+```{r step_reg}
+step_reg <- stepAIC(reg1, direction="both")
+
+step_reg$anova
+```
+
+
+### Cross-validation
+
+```{r cv_results}
+cv_reg1 <- CVlm(data = regdata_log,
+                form.lm = reg1,
+                m = 5, 
+                seed = 217,
+                printit = F,
+                plotit = F)
+
+mse1 <- attr(cv_reg1, "ms")
+rmse1 <- sqrt(mse1)	
+
+reg2 <- lm(LNMEDHVAL ~ PCTVACANT + MEDHHINC, regdata_log)
+
+cv_reg2 <- CVlm(data = regdata_log, 
+                form.lm = reg2, 
+                m = 5, 
+                seed = 217,
+                printit = F,
+                plotit = F)
+
+mse2 <- attr(cv_reg2, "ms")
+rmse2 <- sqrt(mse2)
+
+# table comparing RMSE
+rmse_table <- data.frame(round(rmse1, 5),
+                         round(rmse2, 5))
+row.names(rmse_table) <- "Root Mean Squared Error (RMSE)"
+
+rmse_table %>% 
+  kbl(caption = "Table 2. Comparing RMSE of Original and Simplified Models",
+      align = "c",
+      col.names = c("Original Model", "Simplified Model")) %>% 
+  kable_styling() %>% 
+  kable_classic(full_width = F, html_font = "Cambria") %>% 
+  add_footnote(label = "\"Original Model\" refers to the model that uses all four predictors (PCTVACANT, PCTSINGLES, PCTBACHMOR, and LNNBELPOV100) to predict LNMEDHVAL, while \"Simplified Model\" refers to the model with only two predictors: PCTVACANT and MEDHHINCOME.",
+               notation = "none")
+
+```
+
+
+# Discussion and Limitations
+
+## Conclusions
+
+
+## Limitations of Model
+
+
+
+## Ridge or Lasso?
 
