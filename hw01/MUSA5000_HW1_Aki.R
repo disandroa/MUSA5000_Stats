@@ -21,6 +21,9 @@
   
   # functions
   `%notin%` <- Negate(`%in%`)
+  
+  magma <- c("#000004FF","#180F3EFF","#451077FF","#721F81FF","#9F2F7FFF","#CD4071FF",
+             "#F1605DFF","#FD9567FF","#FEC98DFF","#FCFDBFFF")
 }
 
 # load data ----
