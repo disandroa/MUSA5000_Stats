@@ -152,7 +152,8 @@ In addition to the model utility test for the overall model, a hypothesis test i
 
 ### Stepwise Regression
 
-In addition to our multiple regression, we will also run a stepwise regression, which is a simple data mining method which selects predictors based on some criteria. In our study, we will use the Akaike Information Criterion (AIC), a measure of relative quality of statistical models to select predictors. 
+In addition to our multiple regression, we will also run a stepwise regression, which is a simple data mining method which selects predictors based on some criteria. In our study, we will use the Akaike Information Criterion (AIC), a measure of relative quality of statistical models to select predictors.
+
 There are a few limitations to stepwise regression. First, the final model is not guaranteed to be optimal, and in fact, there are often several good-quality models, but stepwise regression will only present one such model. Stepwise regression is purely mathematical and does not take into account a researcher’s knowledge about predictors and end up excluding them. There are Type I and Type II errors that can occur with stepwise regression, so we cannot assume that we have kept all the most important variables and gotten rid of all of the unimportant variables. In fact, many t-tests are conducted as part of stepwise regression, which makes the probability of committing a Type I or Type II error high.
 
 ### K-fold Cross-Validation
@@ -168,7 +169,7 @@ where $y_i$ is the $i$^th^ observation of $y$, the dependent variable, $\bar{y}$
 
 ## Software
 
-We used R for all analyses [@rsoftware].
+We used R for all analyses [@R-base].
 
 # Results
 
@@ -525,11 +526,9 @@ reg1_res <- regdata_log %>%
 reg1_sum
 ```
 
-The quality of the model is quite satisfactory, featuring an $R^2$ value of approximately 0.66. This indicates that roughly two-thirds of the variance in median house values can be accounted for by our model. Additionally, the F-test yielded a very low p-value, suggesting that we can reject the null hypothesis that all coefficients in the model are 0.
+The quality of the model is quite satisfactory, featuring an $R^2$ and Adjusted $R^2$ of 0.662 and 0.661, respectively. This indicates that roughly two-thirds of the variance in median house values can be accounted for by our model. Additionally, the F-test yielded a very low p-value, suggesting that we can reject the null hypothesis that all coefficients in the model are 0.
 
-The regression output tells us that each variable is highly significant (p < 0.001 for each variable). `LNNBELPOV100` and `PCTVACANT` are both negatively associated with `LNMEDHVAL.` As median house value changes by 1%, the expected value of `LNNBELOV` changes by approximately -0.77%, holding all else constant (since the $\beta$ coefficient for `LNNBELPOV100` is small (0.789), we can approximate (1.01 $\beta$ − 1) ∙ 100% ≈ $\beta$%. Our coefficient for `PCTVACANT` is -0.019, also a small value (β≤ 0.3 in absolute value), tells us that as median house value goes up by one unit, the expected value of `PCTVACANT` changes by approximately -1.9% (100β%) holding all other variables constant. `PCTSINGLES` and `PCTBACHMOR` are both positively associated with `LNMEDHVAL` with small coefficients. As median house value goes up by one unit, the expected value of `PCTSINGLES` changes by 0.2%, all other variables constant. `PCTBACHMOR` changes by approximately 2% when median house value goes up by one unit.
-
-The model’s $R^2$ and Adjusted $R^2$ are 0.662 and 0.661, respectively. This tells us that approximately 66%, or two thirds of the variance in the dependent variable is explained by the model.
+The regression output tells us that each variable is highly significant (p < 0.001 for each variable). `LNNBELPOV100` and `PCTVACANT` are both negatively associated with `LNMEDHVAL`. As the number of units living in poverty (`NBELOV100`) changes by 1%, the expected value of Median House Value (`MEDHVAL`) changes by approximately (1.01^$\beta$^ - 1)∙100% = (1.01^-0.079^ - 1)∙100% = -0.079%, holding all else constant (since $\beta$ = -0.79 and $|\beta| < 20$ for `LNNBELPOV100`, we can approximate (1.01^$\beta$^ − 1)∙100% ≈ $\beta$%). The coefficient for `PCTVACANT` is -0.019, for which the absolute value is $\leq$ 0.3, so we can say that as `PCTVACANT` goes up by one unit (in this case 1%), the expected value of `MEDHVAL` changes by approximately -1.9% (100$\beta_1$%) holding all other variables constant. `PCTSINGLES` and `PCTBACHMOR` are both positively associated with `LNMEDHVAL` with small coefficients, $\beta$ = 0.003 and 0.021, respectively (in both cases, |$\beta$| $\leq$ 3), so we can use the same approximation as we did for `PCTVACANT`. As `PCTSINGLES` goes up by one unit with all other variables constant, the expected value of median house value changes by 0.3%. As `PCTBACHMOR` goes up by one unit with all other variables held constant, median house value changes by approximately 2.1%.
 
 ### Regression Assumption Checks
 
@@ -567,7 +566,7 @@ scatter_lnnbelpov <- regdata_log %>%
        y = "Median House Value (Log-transformed)") 
 ```
 
-```{r predictor_scatter, fig.height=8}
+```{r predictor_scatter, fig.height=8, fig.cap="Figure 9."}
 # display all four figures in one
 grid.arrange(scatter_pctbach, scatter_pctvac, scatter_pctsing, scatter_lnnbelpov,
              ncol = 2,
@@ -576,13 +575,13 @@ grid.arrange(scatter_pctbach, scatter_pctvac, scatter_pctsing, scatter_lnnbelpov
 
 ```
 
-The above scatter plots visualize the relationship between the dependent variable, the log-transformed median house value, on the y-axis, and each of our predictors on the x-axis. The relationship between house values and the percentage of block residents with at least a bachelor’s degree is positive and somewhat linear, but the relationship is not strong. The plots for vacant units and the log-transformed number of households in poverty show a negative association with median house values, but not a strong linear relationship. The plot of percentage of single family homes is not linear, and does not show a clear relationship to the dependent variable.
+Figure 9 visualizes the relationship between the dependent variable, the log-transformed median house value (`LNMEDHVAL`), on the y-axis, and each of our predictors on the x-axis. The relationship between house values and the percentage of block residents with at least a bachelor’s degree is positive and somewhat linear. The plots for vacant units and the log-transformed number of households in poverty show a negative association with median house values, but it is questionable whether this is a linear relationship, especially in the case of the plot of log-transformed number of households in poverty where we see several observations with a value of zero for the predictor. The plot of percentage of single family homes is not linear, but a slight positive relationship with the dependent variable can be observed.
 
 ### Standardized Residuals
 
-We standardize the regression residuals by dividing them by their standard error, making it easier to compare residuals to each other and identify potential outliers. The histogram below shows that the standardized residuals follow a normal distribution. 
+We standardize the regression residuals by dividing them by their standard error, making it easier to compare residuals to each other and identify potential outliers. Figure 10 shows that the standardized residuals follow a normal distribution. 
 
-```{r std_resid_hist}
+```{r std_resid_hist, fig.cap="Figure 10."}
 hist_std_resid <- ggplot(reg1_res) +
   geom_histogram(aes(x = std_residual), fill = "#451077FF") +
   theme_minimal() +
@@ -594,9 +593,9 @@ hist_std_resid
 
 ```
 
-The scatter plot of standardized residuals by predicted values indicates that there is no heteroscedasticity in our model–that is, there is no relationship or pattern in the scatter plot between predicted values and the standardized residuals. Though the plot appears homoscedastic, we detect the presence of some outliers. 
+The scatter plot of standardized residuals by predicted values (figure 11) indicates that there is no heteroscedasticity in our model–that is, there is no relationship or pattern in the scatter plot between predicted values and the standardized residuals. Though the plot appears homoscedastic, we detect the presence of some outliers. 
 
-```{r std_resid_scatter}
+```{r std_resid_scatter, fig.cap="Figure 11."}
 scatter_std_resid <- reg1_res %>% 
   ggplot() +
   geom_hline(yintercept = 0, color = "#F1605DFF") +
@@ -610,30 +609,35 @@ scatter_std_resid
 
 ```
 
-[add outlier chloropleth map here]
+```{r outliers, fig.cap="Figure 12."}
+outlier <- reg1_res %>% 
+  mutate(extreme_outlier = ifelse(abs(std_residual) > 4, "Outlier", "Not Outlier"),
+         extreme_outlier = factor(extreme_outlier, levels = c("Outlier", "Not Outlier"))) %>% 
+  dplyr::select(POLY_ID,extreme_outlier) %>% 
+  left_join(regshp %>% 
+              dplyr::select(POLY_ID),
+            by = "POLY_ID") %>% 
+  st_as_sf()
 
-To identify which data points are outliers, we used the absolute value of the standardized residuals. Observations where the absolute value of the standardized residual is 4 or greater are considered extreme outliers in our data set. A map of these observations reveals that these outliers are located near a large park, City Hall, a gas plant, and other non-residential uses. Unique neighborhood characteristics for blocks located near one of these sites could explain the high standardized residuals. This context is useful for understanding our model, but does not prompt any additional action.
-
-The maps of the dependent variables and predictors did show spatial autocorrelation. The map of the dependent variable showed blocks with high home values next to other blocks with high home values, and vice versa. Maps of independent variables indicated that blocks with a high percentage of people with bachelor’s degrees were close to each other, and that blocks with high poverty are not usually near blocks with little poverty. Overall, the chloropleth maps show blocks with similar characteristics located near each other in space.
-
-```{r std_resid_chloro}
-chloro_std_resid <- left_join(regshp,
-                              reg1_res %>% 
-                                dplyr::select(POLY_ID,LNNBELPOV100,predicted_LNMEDHVAL:std_residual),
-                              by = "POLY_ID") %>% 
+outlier_map <- outlier %>% 
   ggplot() +
-  geom_sf(aes(fill = std_residual)) +
+  geom_sf(aes(fill = extreme_outlier),
+          color = "#180F3EFF") +
+  scale_fill_manual(values = c("Outlier" = "#F1605DFF", 
+                               "Not Outlier" = "#451077FF")) +
   theme_void() +
-  scale_fill_gradient2(name = "Stand. Res.",
-                       low = "#451077FF",
-                       mid = "white",
-                       high = "#F1605DFF",
-                       na.value = "grey",
-                       limits = c(-6.25, 6.25)) +
-  labs(title = "Standardized Regression Residual",
-       fill = "Stand. Res.")
+  labs(title = "Block groups with Extreme Outliers for Standardized Residuals",
+       fill = "")
 
-left_join(regshp,
+outlier_map
+```
+
+To identify extreme outliers, we used the absolute value of the standardized residuals and defined an extreme outlier to be an observation where the absolute value of the standardized residual is 4 or greater. A map of these observations (figure 12) reveals that these outliers are located near a large park (Wissahickon Valley park), City Hall, a gas plant, and other non-residential areas. Unique neighborhood characteristics for blocks located near one of these sites could explain the high standardized residuals as they are hard to capture in a general model with the predictors that we chose. This context is useful for understanding our model, but does not prompt any additional action.
+
+The maps of the dependent variables and predictors did show spatial autocorrelation. The map of the dependent variable showed blocks with high home values next to other blocks with high home values, and vice versa. Maps of independent variables indicated that blocks with a high percentage of people with bachelor’s degrees were close to each other, and that blocks with high poverty are not usually near blocks with little poverty. Overall, the chloropleth maps show that block groups with similar characteristics tend to cluster together in space.
+
+```{r std_resid_chloro, fig.cap="Figure 13"}
+chloro_std_resid <- left_join(regshp,
           reg1_res %>% 
             dplyr::select(POLY_ID,LNNBELPOV100,predicted_LNMEDHVAL:std_residual),
           by = "POLY_ID") %>% 
@@ -646,7 +650,6 @@ left_join(regshp,
                        limits = c(-6.25, 6.25)) +
   labs(title = "Standardized Regression Residual",
        fill = "Stand. Res.")
-
 
 chloro_std_resid
     
@@ -705,6 +708,8 @@ rmse_table %>%
 
 ```
 
+Table 2 shows the results of the k-fold cross validation (using k = 5 folds) for our main regression model and simplified model suing only `PCTVACANT` and `MEDHHINCOME` as predictors for `LNMEDHVAL`. Our original model performed better than the simplified one, as it has a lower RMSE.
+
 # Discussion and Limitations
 
 ## Conclusions
@@ -719,7 +724,7 @@ The RMSE was about 0.37 for the original 4-predictor model and about 0.44 for th
 
 ## Limitations of Model
 
-The model has some limitations. As stated before in the exploratory analysis, all of the predictor variables apart from the number of households in poverty did not exhibit normality but could not be log-transformed due to their spike at zero. This violates the assumption of normality among variables. This is one severe limitation to the model, because the formula for linear regression cannot be derived when variables are not normal.
+The model has some limitations. As stated before in the exploratory analysis, all of the variables did not exhibit normality. While we were able to correct this for median house value and number of households in poverty with a log transformation, it makes interpretation of the beta coefficients less easy, with additional calculations required to understand the effect of a variable in an intuitive way. Three of the predictor variables had a spike at 0 when log-transformed, so their original form was used in the model, but that does not violate any assumption for the model so it is fine.
 
 Another limitation to the model is that the residuals are not spatially independent. This shows that the model predicts certain neighborhoods more accurately than others. A potential solution to this would be to add a spatial variable to the model.
 
