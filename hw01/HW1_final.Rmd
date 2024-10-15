@@ -2,11 +2,13 @@
 title: "Predicting Median House Value in Philadelphia"
 author: "Akira Di Sandro, Sofia Fasullo, Amy Solano"
 date: "2024-10-14"
-output: 
+output:
   html_document:
     toc: true
     toc_float: true
     code_folding: hide
+  pdf_document:
+    toc: true
 bibliography: HW1_ref.bib
 ---
 
@@ -62,8 +64,6 @@ The original census data set had 1816 block groups included, also referred to as
 
 Before regressing median house value upon any of the predictors, we want to make sure the assumptions held for a model are correct. These include the normality, homoscedasticity and non-collinearity of variables. This will be examined through exploratory analysis. We will examine the summary statistics and distributions of the variables to check some of these assumptions.
 
-[describe variables]
-
 In addition to assessing the distributions of the variables, we will check for correlation between the predictor variables. When regressing median household value on other variables using an OLS linear model, we are assuming that the predictor variables are not highly correlated with each other.
 
 Correlation is the assessment of whether or not a linear relationship exists between two variables. Correlation is standardized and normalized covariance, a statistic that measures the same thing. As such, the correlation between two variables falls between -1 and 1, with the values on either end being the strongest negative and positive linear relationship, respectively, and the value 0 being no evident linear relationship. Typically, statisticians consider an absolute value of 0.8 or higher to be a high correlation value, however this varies depending on the field of application.
@@ -117,10 +117,10 @@ $$
 $$
 where $\epsilon_i$ is the residual term for the $i$^th^ observation, $x_1,...,x_k$ and $y$ are the k predictors and dependent variable, respectively, $x_{1i},...,x_{ki}$ and $y_i$ are the $i$^th^ observations of $x_1,...,x_k$ and $y$, respectively, $\hat{y}_i$ is the estimate of the $i$^th^ observation of $y$, and $\beta_0$ and $\beta_1,...,\beta_k$ are the model intercept and coefficients for predictors $x_1,...,x_k$.
 
-In multiple regression, $\sigma^2$ is calculated using the following formula where $n$ is the number of observations and $k$ is the number of predictors.
+In multiple regression, $\sigma^2$ is calculated using the following formula where $n$ is the number of observations and $k$ is the number of predictors. The $\sigma^2$ is also known as the mean square errors (MSE).
 
 $$
-\sigma^2 = \frac{\text{SSE}}{n - (k + 1)}
+\sigma^2 = \frac{\text{SSE}}{n - (k + 1)} = \text{MSE}
 $$
 The coefficient of multiple determination, $R^2$, is a ratio that tells us proportion of observed variation in the dependent variable that can be explained by the model (and predictors). $R^2$ can range from 0 to 1 and a higher value signifies that a model is more successful at explaining the variation in the variable that is being predicted.
 
@@ -138,8 +138,12 @@ where $n$ is the number of observations and $k$ is the number of predictors.
 
 In this study, we are testing the hypothesis that the dependent variable, Median House Value (`MEDHVAL`) is independent of all predictor variables, % of residents with at least a bachelor’s degree (`PCTBACHMOR`), % of single family houses (`PCTSINGLE`), % of houses that are vacant (`PCTVACANT`), and the number of households living in poverty (`NBELPOV`). We test this hypothesis by using the model utility test, also referred to as the F-ratio or F-test which is a goodness of fit measure. This tests the Null Hypothesis ($H_0$) that all coefficients in the model are zero, i.e. none of the independent variables is a significant predictor of the dependent variable. The alternative hypothesis ($H_a$) states that at least one of the predictors has a non-zero coefficient. We can typically reject the null hypothesis when we have a p < 0.05 for the F-ratio.
 
+Below is the formula for the F-statistic:
+
 $$
+\text{F} = \frac{\text{MSR}}{\text{MSE}}
 $$
+where F is the F-statistic, MSR is the mean square regression, defined as $\text{MSR} = \frac{\text{SSR}}{k}$ where SSR is the sum square of regression and $k$ is the number of predictors in the model. $\text{SSR} = \sum_{i=1}^n (\hat{y}_i - \bar{y})^2$ where $n$ is the number of observations, $\hat{y}_i$ is the predicted value of $y$ of the $i$^th^ observation, and $\bar{y}$ is the sample mean of $y$ where $y$ is the dependent variable.
 
 In addition to the model utility test for the overall model, a hypothesis test is done for each predictor, $i$, where we test the significance of each beta. These are called t-tests and are usually only examined if the F-ratio is significant. The null hypothesis for these t-tests is that the predictor $i$ is not associated with the dependent variable ($\beta_i$ = 0) and the alternative hypothesis is that $\beta_i$ is non-zero. The null hypothesis can be rejected when p < 0.05 here as well, which indicates that that particular predictor is a statistically significant predictor of the dependent variable.
 
@@ -155,10 +159,12 @@ There are a few limitations to stepwise regression. First, the final model is no
 
 We also include a k-fold cross validation in our study (where k = 5). K-fold cross validation is a way to validate our model and examine it’s generalizability, or ability to predict data accurately on unseen data. In k-fold cross validation, we first separate the data set into random, k equal-sized groups. The first fold or group is treated as the validation data set, and the model parameters are estimated using data from the other k - 1 folds (which we call the training set). The mean squared error (MSE) is computed for the validation fold and the procedure is repeated k times (one time for each fold), resulting in k estimates of MSE. Then, we average the MSEs across the k folds to calculate the k-fold MSE and take the square root of that measure to compute the k-fold root mean squared error (RMSE). 
 
-We use this RMSE to compare it to RMSE of different models to choose the best model (which we define as the model with the smallest RMSE).
+We use this RMSE to compare it to RMSE of different models to choose the best model (which we define as the model with the smallest RMSE). Below is the formula for RMSE:
 
-[formula for RMSE] 
-
+$$
+\text{RMSE} = \sqrt{\text{MSE}} = \sqrt{\frac{\sum_{i=1}^n (y_i - \bar{y})^2}{n}} = \sqrt{\frac{\sum_{i=1}^n \epsilon_i^2}{n}}
+$$
+where $y_i$ is the $i$^th^ observation of $y$, the dependent variable, $\bar{y}$ is the sample mean of $y$, and $n$ is the number of observations.
 
 ## Software
 
@@ -234,7 +240,7 @@ The dependent variable has a mean value of \$66,287.73 and a standard deviation 
 
 ### Variable Histograms
 
-After log-transformation, the dependent variable looks more normally distributed. The same is true for the transformed number of households below the poverty level. The other variables have a large spike at zero after being log-transformed. Our regression will use the log-transformed dependent variable `LNMEDHVAL`, and the log-transformed number of households below the poverty level LNNBELPOV100. The remaining independent variables (`PCTBACHMOR`, `MEDHHINC`, `PCTVACANT`, `PCTSINGLES`) will remain untransformed in our regression. Other regression assumptions will be examined in a separate section below [Regression Assumption Checks].
+After log-transformation, the dependent variable looks more normally distributed (see figure 1). The same is true for the transformed number of households below the poverty level (see figure 3). The other variables have a large spike at zero after being log-transformed which makes them unfit for our model (see figures 2, 4, and 5). Our regression will use the log-transformed dependent variable `LNMEDHVAL`, and the log-transformed number of households below the poverty level, `LNNBELPOV100.` The remaining independent variables (`PCTBACHMOR`, `MEDHHINC`, `PCTVACANT`, `PCTSINGLES`) will remain untransformed in our regression. Other regression assumptions will be examined in a separate section below [Regression Assumption Checks].
 
 ```{r histograms_setup}
 # MEDHVAL
@@ -347,7 +353,7 @@ hist_lnnbelpov <- ggplot(regdata_log) +
 
 ```
 
-```{r medhval_hist}
+```{r medhval_hist, fig.cap="Figure 1."}
 # histogram of raw and log-transformed medhval
 grid.arrange(hist_medhval, hist_lnmedhval,
              ncol = 2,
@@ -357,7 +363,7 @@ grid.arrange(hist_medhval, hist_lnmedhval,
 
 ```
 
-```{r pcbach_hist}
+```{r pcbach_hist, fig.cap="Figure 2."}
 # histogram of raw and log-transformed medhval
 grid.arrange(hist_pctbach, hist_lnpctbach,
              ncol = 2,
@@ -367,7 +373,7 @@ grid.arrange(hist_pctbach, hist_lnpctbach,
 
 ```
 
-```{r nbelpov_hist}
+```{r nbelpov_hist, fig.cap="Figure 3."}
 # histogram of raw and log-transformed nbelpov100
 grid.arrange(hist_nbelpov, hist_lnnbelpov,
              ncol = 2,
@@ -377,7 +383,7 @@ grid.arrange(hist_nbelpov, hist_lnnbelpov,
 
 ```
 
-```{r pctvac_hist}
+```{r pctvac_hist, fig.cap="Figure 4."}
 # histogram of raw and log-transformed pctvacant
 grid.arrange(hist_pctvac, hist_lnpctvac,
              ncol = 2,
@@ -387,7 +393,7 @@ grid.arrange(hist_pctvac, hist_lnpctvac,
 
 ```
 
-```{r pctsing_hist}
+```{r pctsing_hist, fig.cap="Figure 5."}
 # histogram of raw and log-transformed PCTSINGLES
 grid.arrange(hist_pctsing, hist_lnpctsing,
              ncol = 2,
@@ -399,7 +405,9 @@ grid.arrange(hist_pctsing, hist_lnpctsing,
 
 ### Chloropleth Maps
 
-The choropleth map of the dependent variable `LNMEDHVAL` is similar to that of `PCTBACHMOR.` `LNNBELPOV` and `PCTVACANT` look like the opposite of `LNMEDHVAL`, suggesting a possible negative relationship between those predictors and the dependent variable. Based on the visualizations, none of the predictors appear strongly inter-correlated with one other. The relationships observed from these chloropleth maps were between predictors and the dependent variable, not within the predictors themselves. Thus, we do not anticipate severe multicollinearity to be an issue in our analysis. 
+The chloropleth map of the dependent variable `LNMEDHVAL` (figure 6) is similar to that of `PCTBACHMOR` with higher values in the northwestern, northeastern, center city, and university city areas. The map of `PCTVACANT` looks like the opposite of `LNMEDHVAL`, suggesting a possible negative relationship between that predictor and the dependent variable. The `LNNBELPOV100` map is a bit hard to interpret, but if we look closely, the highest values of this variable are concentrated in areas similar to the highest values of `PCTVACANT`, again suggesting a negative relationship between this variable and our dependent variable. 
+
+Based on the visualizations, none of the predictors appear strongly inter-correlated with one other. The relationships observed from these chloropleth maps were between predictors and the dependent variable, not within the predictors themselves. Though we observe some similarities across the chloropleth maps of predictors, none of them look like copies of each other. Thus, we do not anticipate severe multicollinearity to be an issue in our analysis. 
 
 ```{r chloropleth_setup}
 chloro_lnmedhval <- regshp %>%
@@ -457,11 +465,11 @@ chloro_lnnbelpov <- regshp %>%
 
 ```
 
-```{r medhval_chloro}
+```{r medhval_chloro, fig.cap="Figure 6."}
 chloro_lnmedhval
 ```
 
-```{r predictors_chloro, fig.height=8}
+```{r predictors_chloro, fig.height=8, fig.cap="Figure 7."}
 # display all four figures in one
 grid.arrange(chloro_pctbach, chloro_pctvac, chloro_pctsing, chloro_lnnbelpov,
              ncol = 2,
@@ -471,9 +479,7 @@ grid.arrange(chloro_pctbach, chloro_pctvac, chloro_pctsing, chloro_lnnbelpov,
 
 ### Correlation Matrix
 
-The correlation matrix above supports the earlier conclusion that there is not severe multicollinearity among our predictors. Correlation values between variables are low, all falling within the absolute value range of 0.15 and 0.32. 
-
-```{r cormat}
+```{r cormat, fig.cap="Figure 8."}
 cormat <- regdata_log %>% 
   dplyr::select(PCTVACANT,PCTSINGLES,PCTBACHMOR,LNNBELPOV100) %>% 
   cor()
@@ -496,11 +502,13 @@ cor_plot
 
 ```
 
+The correlation matrix above (figure 8) supports the earlier conclusion that there is not severe multicollinearity among our predictors. Correlation values between variables are low, all falling within the absolute value range of 0.15 and 0.32. 
+
 ## Regression Results
 
 ### Regression Output
 
-The quality of the model is quite satisfactory, featuring an R-squared value of approximately 0.66. This indicates that roughly two-thirds of the variation in median house values can be accounted for by our model. Additionally, the F-test yielded a very low p-value, suggesting that it is highly improbable for a model without any predictor variables to achieve such accurate predictions of median house values.
+We regressed log-transformed median household value (`LNMEDHVAL`) on the % of vacant housing units, % of single family houses (`PCTSINGLES`), % of residents with at least a bachelor’s degree (`PCTBACHMOR`), % of vacant housing units (`PCTVACANT`), and the log-transformed number of households living in poverty (`LNNBELPOV100`). Below is the summary of our regression model.
 
 ```{r reg1}
 reg1 <- lm(LNMEDHVAL ~ PCTVACANT + PCTSINGLES + PCTBACHMOR + LNNBELPOV100, regdata_log)
@@ -517,7 +525,9 @@ reg1_res <- regdata_log %>%
 reg1_sum
 ```
 
-We regressed log-transformed median household value (`LNMEDHVAL`) on the % of vacant housing units, % of single family houses (`PCTSINGLES`), % of residents with at least a bachelor’s degree (`PCTBACHMOR`), % of vacant housing units (`PCTVACANT`), and the log-transformed number of households living in poverty (`LNNBELPOV100`). The regression output tells us that each variable is highly significant (p < 0.001 for each variable). `LNNBELPOV100` and `PCTVACANT` are both negatively associated with `LNMEDHVAL.` As median house value changes by 1%, the expected value of `LNNBELOV` changes by approximately -0.77%, holding all else constant (since the $\beta$ coefficient for `LNNBELPOV100` is small (0.789), we can approximate (1.01 $\beta$ − 1) ∙ 100% ≈ $\beta$%. Our coefficient for `PCTVACANT` is -0.019, also a small value (β≤ 0.3 in absolute value), tells us that as median house value goes up by one unit, the expected value of `PCTVACANT` changes by approximately -1.9% (100β%) holding all other variables constant. `PCTSINGLES` and `PCTBACHMOR` are both positively associated with `LNMEDHVAL` with small coefficients. As median house value goes up by one unit, the expected value of `PCTSINGLES` changes by 0.2%, all other variables constant. `PCTBACHMOR` changes by approximately 2% when median house value goes up by one unit.
+The quality of the model is quite satisfactory, featuring an $R^2$ value of approximately 0.66. This indicates that roughly two-thirds of the variance in median house values can be accounted for by our model. Additionally, the F-test yielded a very low p-value, suggesting that we can reject the null hypothesis that all coefficients in the model are 0.
+
+The regression output tells us that each variable is highly significant (p < 0.001 for each variable). `LNNBELPOV100` and `PCTVACANT` are both negatively associated with `LNMEDHVAL.` As median house value changes by 1%, the expected value of `LNNBELOV` changes by approximately -0.77%, holding all else constant (since the $\beta$ coefficient for `LNNBELPOV100` is small (0.789), we can approximate (1.01 $\beta$ − 1) ∙ 100% ≈ $\beta$%. Our coefficient for `PCTVACANT` is -0.019, also a small value (β≤ 0.3 in absolute value), tells us that as median house value goes up by one unit, the expected value of `PCTVACANT` changes by approximately -1.9% (100β%) holding all other variables constant. `PCTSINGLES` and `PCTBACHMOR` are both positively associated with `LNMEDHVAL` with small coefficients. As median house value goes up by one unit, the expected value of `PCTSINGLES` changes by 0.2%, all other variables constant. `PCTBACHMOR` changes by approximately 2% when median house value goes up by one unit.
 
 The model’s $R^2$ and Adjusted $R^2$ are 0.662 and 0.661, respectively. This tells us that approximately 66%, or two thirds of the variance in the dependent variable is explained by the model.
 
