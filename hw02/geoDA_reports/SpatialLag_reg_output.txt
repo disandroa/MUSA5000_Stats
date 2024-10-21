@@ -1,0 +1,37 @@
+>>10/21/2024 03:35:38 PM
+REGRESSION
+----------
+SUMMARY OF OUTPUT: SPATIAL LAG MODEL - MAXIMUM LIKELIHOOD ESTIMATION
+Data set            : HW02_RegressionData
+Spatial Weight      : HW02_RegressionData_1
+Dependent Variable  :   LNMEDHVAL  Number of Observations: 1720
+Mean dependent var  :      10.882  Number of Variables   :    6
+S.D. dependent var  :     0.62972  Degrees of Freedom    : 1714
+Lag coeff.   (Rho)  :    0.651097
+
+R-squared           :    0.818564  Log likelihood        :     -255.74
+Sq. Correlation     : -            Akaike info criterion :      523.48
+Sigma-square        :    0.071948  Schwarz criterion     :      556.18
+S.E of regression   :    0.268231
+
+-----------------------------------------------------------------------------
+       Variable       Coefficient     Std.Error       z-value    Probability
+-----------------------------------------------------------------------------
+       W_LNMEDHVAL      0.651097      0.0180501        36.0716     0.00000
+          CONSTANT       3.89845       0.201114        19.3843     0.00000
+         LNNBELPOV    -0.0340547     0.00629287       -5.41163     0.00000
+        PCTSINGLES    0.00203342     0.00051577         3.9425     0.00008
+         PCTVACANT    -0.0085294    0.000743667       -11.4694     0.00000
+        PCTBACHMOR    0.00851381    0.000521935         16.312     0.00000
+-----------------------------------------------------------------------------
+
+REGRESSION DIAGNOSTICS
+DIAGNOSTICS FOR HETEROSKEDASTICITY 
+RANDOM COEFFICIENTS
+TEST                                     DF      VALUE        PROB
+Breusch-Pagan test                       4       220.3884     0.00000
+
+DIAGNOSTICS FOR SPATIAL DEPENDENCE
+SPATIAL LAG DEPENDENCE FOR WEIGHT MATRIX : HW02_RegressionData_1
+TEST                                     DF      VALUE        PROB
+Likelihood Ratio Test                    1       911.5067     0.00000

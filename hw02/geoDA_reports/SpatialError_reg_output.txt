@@ -1,0 +1,39 @@
+>>10/21/2024 03:41:37 PM
+REGRESSION
+----------
+SUMMARY OF OUTPUT: SPATIAL ERROR MODEL - MAXIMUM LIKELIHOOD ESTIMATION 
+Data set            : HW02_RegressionData
+Spatial Weight      : HW02_RegressionData_1
+Dependent Variable  :   LNMEDHVAL  Number of Observations: 1720
+Mean dependent var  :   10.882000  Number of Variables   :    5
+S.D. dependent var  :    0.629720  Degrees of Freedom    : 1715
+Lag coeff. (Lambda) :    0.814918
+
+R-squared           :    0.806957  R-squared (BUSE)      : - 
+Sq. Correlation     : -            Log likelihood        : -372.690368
+Sigma-square        :   0.0765508  Akaike info criterion :     755.381
+S.E of regression   :    0.276678  Schwarz criterion     :     782.631
+
+-----------------------------------------------------------------------------
+       Variable       Coefficient     Std.Error       z-value    Probability
+-----------------------------------------------------------------------------
+          CONSTANT       10.9064      0.0534678        203.981     0.00000
+        PCTBACHMOR    0.00981293    0.000728964        13.4615     0.00000
+         PCTVACANT   -0.00578308    0.000886701       -6.52201     0.00000
+        PCTSINGLES    0.00267792    0.000620832        4.31343     0.00002
+         LNNBELPOV    -0.0345341     0.00708933       -4.87127     0.00000
+            LAMBDA      0.814918       0.016373        49.7719     0.00000
+-----------------------------------------------------------------------------
+
+REGRESSION DIAGNOSTICS
+DIAGNOSTICS FOR HETEROSKEDASTICITY 
+RANDOM COEFFICIENTS
+TEST                                     DF      VALUE        PROB
+Breusch-Pagan test                       4       210.9923     0.00000
+
+DIAGNOSTICS FOR SPATIAL DEPENDENCE 
+SPATIAL ERROR DEPENDENCE FOR WEIGHT MATRIX : HW02_RegressionData_1
+TEST                                     DF      VALUE        PROB
+Likelihood Ratio Test                    1       677.6059     0.00000
+============================== END OF REPORT ================================
+

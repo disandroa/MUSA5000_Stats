@@ -1,0 +1,56 @@
+>>10/17/2024 06:12:18 PM
+REGRESSION
+----------
+SUMMARY OF OUTPUT: ORDINARY LEAST SQUARES ESTIMATION
+Data set            :  RegressionData
+Dependent Variable  :   LNMEDHVAL  Number of Observations: 1720
+Mean dependent var  :      10.882  Number of Variables   :    5
+S.D. dependent var  :     0.62972  Degrees of Freedom    : 1715 
+
+R-squared           :    0.662300  F-statistic           :     840.869
+Adjusted R-squared  :    0.661513  Prob(F-statistic)     :           0
+Sum squared residual:     230.332  Log likelihood        :    -711.493
+Sigma-square        :    0.134304  Akaike info criterion :     1432.99
+S.E. of regression  :    0.366475  Schwarz criterion     :     1460.24
+Sigma-square ML     :    0.133914
+S.E of regression ML:    0.365942
+
+-----------------------------------------------------------------------------
+       Variable      Coefficient      Std.Error    t-Statistic   Probability
+-----------------------------------------------------------------------------
+          CONSTANT       11.1138      0.0465318        238.843     0.00000
+        PCTBACHMOR     0.0209095    0.000543184        38.4944     0.00000
+         PCTVACANT    -0.0191563    0.000977851       -19.5902     0.00000
+        PCTSINGLES    0.00297695    0.000703155        4.23371     0.00002
+         LNNBELPOV    -0.0789035      0.0084567        -9.3303     0.00000
+-----------------------------------------------------------------------------
+
+REGRESSION DIAGNOSTICS  
+MULTICOLLINEARITY CONDITION NUMBER   12.990609
+TEST ON NORMALITY OF ERRORS
+TEST                  DF           VALUE             PROB
+Jarque-Bera            2           778.9646          0.00000
+
+DIAGNOSTICS FOR HETEROSKEDASTICITY  
+RANDOM COEFFICIENTS
+TEST                  DF           VALUE             PROB
+Breusch-Pagan test     4           162.9108          0.00000
+Koenker-Bassett test   4            61.6992          0.00000
+SPECIFICATION ROBUST TEST
+TEST                  DF           VALUE             PROB
+White                 14           111.3224          0.00000
+
+DIAGNOSTICS FOR SPATIAL DEPENDENCE   
+FOR WEIGHT MATRIX : RegressionData
+   (row-standardized weights)
+TEST                          MI/DF        VALUE          PROB
+Moran's I (error)             0.3129       22.3664        0.00000
+Lagrange Multiplier (lag)       1         930.1626        0.00000
+Robust LM (lag)                 1         441.1061        0.00000
+Lagrange Multiplier (error)     1         490.5691        0.00000
+Robust LM (error)               1           1.5126        0.21875
+Lagrange Multiplier (SARMA)     2         931.6751        0.00000
+============================== END OF REPORT ================================
+
+
+
