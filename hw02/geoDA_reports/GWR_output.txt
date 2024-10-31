@@ -1,0 +1,25 @@
+Call:
+gwr(formula = LNMEDHVAL ~ PCTBACHMOR + PCTVACANT + PCTSINGLES + 
+    LNNBELPOV, data = regshp_sp, gweight = gwr.Gauss, adapt = bw, 
+    hatmatrix = T, se.fit = T)
+Kernel function: gwr.Gauss 
+Adaptive quantile: 0.008130619 (about 13 of 1720 data points)
+Summary of GWR coefficient estimates at data points:
+                   Min.    1st Qu.     Median    3rd Qu.       Max.  Global
+X.Intercept.  9.6727618 10.7143173 10.9542384 11.1742009 12.0831381 11.1138
+PCTBACHMOR    0.0010974  0.0101380  0.0149279  0.0202187  0.0347258  0.0209
+PCTVACANT    -0.0317407 -0.0142383 -0.0089599 -0.0035770  0.0167916 -0.0192
+PCTSINGLES   -0.0249706 -0.0075550 -0.0016626  0.0042280  0.0143340  0.0030
+LNNBELPOV    -0.2365244 -0.0733572 -0.0401186 -0.0126657  0.0948768 -0.0789
+Number of data points: 1720 
+Effective number of parameters (residual: 2traceS - traceS'S): 360.5225 
+Effective degrees of freedom (residual: 2traceS - traceS'S): 1359.477 
+Sigma (residual: 2traceS - traceS'S): 0.2762201 
+Effective number of parameters (model: traceS): 257.9061 
+Effective degrees of freedom (model: traceS): 1462.094 
+Sigma (model: traceS): 0.2663506 
+Sigma (ML): 0.245571 
+AICc (GWR p. 61, eq 2.33; p. 96, eq. 4.21): 660.7924 
+AIC (GWR p. 96, eq. 4.22): 308.7123 
+Residual sum of squares: 103.7248 
+Quasi-global R2: 0.8479244 

@@ -71,6 +71,95 @@ queen <- poly2nb(regshp, row.names = regshp$POLY_ID)
 ```{r globalMoransI}
 queenlist <- nb2listw(queen, style = 'W')
 
-moran(regshp$LNMEDHHINC, queenlist, n=length(queenlist$neighbours), S0=Szero(queenlist))$`I` 
+moran(regshp, queenlist, n=length(queenlist$neighbours), S0=Szero(queenlist))$`I` 
+```
+
+```{r bandwidth_selection}
+# convert regshp to sp object
+regshp_sp <- as(regshp, 'Spatial')
+
+# class(regshp_sp)
+
+bw <- gwr.sel(formula = LNMEDHVAL ~ PCTBACHMOR + PCTVACANT + PCTSINGLES + LNNBELPOV, 
+              data = regshp_sp,
+              method = "aic",
+              adapt = T)
+
+# bw
+
+```
+
+```{r GWR_model}
+gwrmodel <- gwr(formula = LNMEDHVAL ~ PCTBACHMOR + PCTVACANT + PCTSINGLES + LNNBELPOV, 
+                data = regshp_sp,
+                adapt = bw,
+                gweight = gwr.Gauss,
+                se.fit = T,
+                hatmatrix = T)
+
+# gwrmodel
+
+```
+
+```{r GWR_results}
+summary(gwrmodel$SDF)
+
+```
+
+```{r GWR_map_std_coefs}
+gwrresults <- as.data.frame(gwrmodel$SDF)
+
+regshp_sp_res <- regshp_sp %>% 
+  st_as_sf() %>% 
+  mutate(coefPCTBACHMORst = gwrresults$PCTBACHMOR / gwrresults$PCTBACHMOR_se,
+         coefPCTVACANTst = gwrresults$PCTVACANT / gwrresults$PCTVACANT_se,
+         coefPCTSINGLESst = gwrresults$PCTSINGLES / gwrresults$PCTSINGLES_se,
+         coefLNNBELPOVst = gwrresults$LNNBELPOV / gwrresults$LNNBELPOV_se,
+         GWR_RESIDU = gwrresults$gwr.e,
+         localR2 = gwrresults$localR2)
+
+coefPCTBACHMOR <- tm_shape(regshp_sp_res) +
+  tm_fill(col = 'coefPCTBACHMORst', 
+          breaks = c(-Inf, -6, -4, -2, 0, 2, 4, 6, Inf), 
+          title = 'Standardized coefficient of PCTBACHMOR', 
+          palette = '-RdBu')+
+  tm_layout(frame = F, title = '% Bachelors Degree or more')
+
+coefPCTVACANT <- tm_shape(regshp_sp_res) +
+  tm_fill(col = 'coefPCTVACANTst', 
+          breaks = c(-Inf, -6, -4, -2, 0, 2, 4, 6, Inf), 
+          title = 'Standardized coefficient of PCTVACANT', 
+          palette = '-RdBu')+
+  tm_layout(frame = F, title = '% Vacant Units')
+
+coefPCTSINGLES <- tm_shape(regshp_sp_res) +
+  tm_fill(col = 'coefPCTSINGLESst', 
+          breaks = c(-Inf, -6, -4, -2, 0, 2, 4, 6, Inf), 
+          title = 'Standardized coefficient of PCTSINGLES', 
+          palette = '-RdBu')+
+  tm_layout(frame = F, title = '% Single Family Units')
+
+coefLNNBELPOV <- tm_shape(regshp_sp_res) +
+  tm_fill(col = 'coefLNNBELPOVst', 
+          breaks = c(-Inf, -6, -4, -2, 0, 2, 4, 6, Inf), 
+          title = 'Standardized coefficient of LNNBELPOV', 
+          palette = '-RdBu')+
+  tm_layout(frame = F, title = '# of Units Living in Poverty (log-transformed)')
+
+tmap_arrange(coefPCTBACHMOR, coefPCTVACANT, coefPCTSINGLES, coefLNNBELPOV, ncol = 2)
+```
+
+```{r localR2_map}
+tm_shape(regshp_sp_res) +
+  tm_fill(col = 'localR2',  
+          breaks = c(0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7), 
+          n = 5, 
+          palette = 'Blues') +
+  tm_layout(frame = F)
+```
+
+
+```{r save_new_shp_file}
+st_write(regshp_sp_res, "data/HW02_RegressionData_GWR.shp")
 ```
 

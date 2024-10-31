@@ -1,9 +1,9 @@
->>10/21/2024 03:41:37 PM
+>>10/28/2024 04:42:07 PM
 REGRESSION
 ----------
 SUMMARY OF OUTPUT: SPATIAL ERROR MODEL - MAXIMUM LIKELIHOOD ESTIMATION 
 Data set            : HW02_RegressionData
-Spatial Weight      : HW02_RegressionData_1
+Spatial Weight      : HW02_RegressionData
 Dependent Variable  :   LNMEDHVAL  Number of Observations: 1720
 Mean dependent var  :   10.882000  Number of Variables   :    5
 S.D. dependent var  :    0.629720  Degrees of Freedom    : 1715
@@ -32,7 +32,7 @@ TEST                                     DF      VALUE        PROB
 Breusch-Pagan test                       4       210.9923     0.00000
 
 DIAGNOSTICS FOR SPATIAL DEPENDENCE 
-SPATIAL ERROR DEPENDENCE FOR WEIGHT MATRIX : HW02_RegressionData_1
+SPATIAL ERROR DEPENDENCE FOR WEIGHT MATRIX : HW02_RegressionData
 TEST                                     DF      VALUE        PROB
 Likelihood Ratio Test                    1       677.6059     0.00000
 ============================== END OF REPORT ================================
