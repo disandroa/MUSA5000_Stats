@@ -120,8 +120,8 @@ tmap_arrange(PCTVACANT, LNNBELPOV, PCTBACH, PCTSINGLES, widths = c(.5, .5))
 
 
 rsquaredmap <- tm_shape(las.sf)+
-  tm_polygons(fill="localR2", col="grey50", lwd = 0.5,
+  tm_polygons(fill="localR2", col="grey50", lwd = 0.2,
               fill.legend = tm_legend(title = "", position = tm_pos_in("right", "bottom")),
-              tm_scale_intervals(values = "tableau.red_blue_white_diverging"))+
-  tm_title(text="R-squared", size=1.2, fontface="bold", fontfamily="Palatino",
+              tm_scale_intervals(values = "carto.yl_burg", breaks = c(0,0.27,0.4, 0.53,0.67, Inf)))+
+  tm_title(text="Local R-squared", size=1.2, fontface="bold", fontfamily="Palatino",
            position = tm_pos_out("center", "top"))
