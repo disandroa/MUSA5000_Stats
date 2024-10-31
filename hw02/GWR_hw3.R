@@ -85,7 +85,7 @@ moran.plot(gwrresults$gwr.e, queenlist)
 
 
 PCTVACANT <-tm_shape(las.sf)+
-  tm_polygons(fill="coefPCTVACANTst", col="grey50", lwd = 0.5,
+  tm_polygons(fill="coefPCTVACANTst", col="grey50", lwd = 0.2,
               fill.legend = tm_legend(title = "", position = tm_pos_in("right", "bottom")),
               tm_scale_intervals(values = "tableau.red_blue_white_diverging",
                                  breaks=c(-Inf, -2, 0, 2, Inf)))+
@@ -93,7 +93,7 @@ PCTVACANT <-tm_shape(las.sf)+
            position = tm_pos_out("center", "top"))
 
 LNNBELPOV <- tm_shape(las.sf)+
-  tm_polygons(fill="coefLNNBELPOVst", col="grey50", lwd = 0.5,
+  tm_polygons(fill="coefLNNBELPOVst", col="grey50", lwd = 0.2,
               fill.legend = tm_legend(title = "", position = tm_pos_in("right", "bottom")),
               tm_scale_intervals(values = "tableau.red_blue_white_diverging",
               breaks=c(-Inf, -2, 0, 2, Inf)))+
@@ -101,7 +101,7 @@ LNNBELPOV <- tm_shape(las.sf)+
            position = tm_pos_out("center", "top"))
 
 PCTBACH <- tm_shape(las.sf)+
-  tm_polygons(fill="coefPCTBACHMORst", col="grey50", lwd = 0.5,
+  tm_polygons(fill="coefPCTBACHMORst", col="grey50", lwd = 0.2,
               fill.legend = tm_legend(title = "", position = tm_pos_in("right", "bottom")),
               tm_scale_intervals(values = "tableau.red_blue_white_diverging",
                                  breaks=c(-Inf, -2, 0, 2, Inf)))+
@@ -109,7 +109,7 @@ PCTBACH <- tm_shape(las.sf)+
            position = tm_pos_out("center", "top"))
 
 PCTSINGLES <- tm_shape(las.sf)+
-  tm_polygons(fill="coefPCTSINGLESst", col="grey50", lwd = 0.5,
+  tm_polygons(fill="coefPCTSINGLESst", col="grey50", lwd = 0.2,
               fill.legend = tm_legend(title = "", position = tm_pos_in("right", "bottom")),
               tm_scale_intervals(values = "tableau.red_blue_white_diverging",
                                  breaks=c(-Inf, -2, 0, 2, Inf)))+
