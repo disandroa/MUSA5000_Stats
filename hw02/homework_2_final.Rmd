@@ -36,7 +36,6 @@ This report iterates on our earlier work that sought to understand whether certa
 
 In addition to our OLS regression, we created choropleth maps of our variables and model residuals which indicated the presence of spatial autocorrelation. OLS analysis is often inappropriate when dealing with spatial data, in part due to the assumption that observations in the data are independent of one another. This assumption is violated in cases like ours where observations are spatially autocorrelated with similar values clustering together in space. In this report, we will use spatial lag, spatial error, and geographically weighted regression to improve upon our OLS model through the use of spatial methods. 
 
-The purpose of this report is to use spatial lag, spatial error and geographically weighted regression to see whether these methods perform better than OLS.
 
 
 ```{r load_data, echo=F, include=F}
