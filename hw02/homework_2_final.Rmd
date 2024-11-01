@@ -62,18 +62,16 @@ The 1st Law of Geography is that “everything is related to everything else, bu
 The Moran’s I statistic is a measurement of the spatial clustering of data. Moran’s I values range between 1 (perfect spatial clustering), and -1 (perfect spatial repelling), with 0 showing no sign of spatial correlation. The formula for Moran’s I is as such: 
 
 $$
-
 Moran's\ I = \frac{N}{\sum_{i} \sum_{j} w_{ij}} \frac{\sum_{i} \sum_{j} w_{ij} (x_i - \bar{x})(x_j - \bar{x})}{\sum_{i} (x_i - \bar{x})^2}
-
 $$
 
 Where
 
-- $$ N $$: The total number of spatial units (observations).
-- $$ x_i $$: The value of the variable at location $$ i $$.
-- $$ x_j $$: The value of the variable at location $$ j $$.
-- $$ \bar{x} $$: The mean value of the variable across all locations.
-- $$ w_{ij} $$: The spatial weight between locations $$ i $$ and $$ j $$ (typically set to 1 if $$ i $$ and $$ j $$ are neighbors, and 0 otherwise).
+- $N$: The total number of spatial units (observations).
+- $x_i$: The value of the variable at location $i$.
+- $x_j$: The value of the variable at location $j$.
+- $\bar{x}$: The mean value of the variable across all locations.
+- $w_{ij}$: The spatial weight between locations $i$ and $j$ (typically set to 1 if $i$ and $j$ are neighbors, and 0 otherwise).
 
 
 This formula is an expansion of the correlation coefficient statistic to accommodate relations between variables that are near each other as accounted for by the weights.
