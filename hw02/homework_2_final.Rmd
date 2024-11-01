@@ -3,12 +3,12 @@ title: "Homework 2"
 author: "Akira Di Sandro, Sofia Fasullo, Amy Solano"
 date: "2024-10-14"
 output:
+  pdf_document:
+    toc: true
   html_document:
     toc: true
     toc_float: true
     code_folding: hide
-  pdf_document:
-    toc: true
 bibliography: HW2_ref.bib
 ---
 
@@ -169,7 +169,7 @@ queenlist<-nb2listw(queen, style = 'W')
 ```
 
 
-```{r moran_value_LMMEDHVAL, warning=FALSE, message=FALSE, cache=FALSE}
+```{r moran_value_LMMEDHVAL, warning=FALSE, message=FALSE}
 moranMC<-moran.mc(regdata$LNMEDHVAL, queenlist, nsim=999, alternative="two.sided")
 
 result <- paste("The Global Moran's I value for the log of median house value is about ", round(moranMC$statistic,2),", with a p-value of about", moranMC$p.value,"(it is extremely small).")
@@ -179,7 +179,7 @@ print(result)
 ```
 
 
-```{r moran_hist_LMMEDHVAL, warning=FALSE, message=FALSE, cache=FALSE, fig.cap="Figure 1."}
+```{r moran_hist_LMMEDHVAL, warning=FALSE, message=FALSE, fig.cap="Figure 1."}
 
 moranMCres<-moranMC$res
 moran_data <- data.frame(Moran_I = moranMCres)
@@ -196,7 +196,7 @@ ggplot(moran_data, aes(x = Moran_I)) +
   theme_minimal()
 ```
 
-```{r scatter_LNMEDHVAL, warning=FALSE, message=FALSE, cache=FALSE, fig.cap="Figure 2."}
+```{r scatter_LNMEDHVAL, warning=FALSE, message=FALSE, fig.cap="Figure 2."}
 
 # Function to plot Moran's I
 moran_plot_ggplot <- function(standardised, listw) {
@@ -231,7 +231,7 @@ moran_plot_ggplot(regdata$LNMEDHVAL,queenlist)
 We observe a global Moran’s I value of 0.794 for our dependent variable, median house value (log-transformed) LNMEDHVAL which is statistically significant (pseudo p < .001). From Figure 1. it can be seen that the Moran's I value falls far outside the distribution. This means that we see statistically significant positive spatial autocorrelation of our dependent variable, meaning similar values of median house value are clustered across Philadelphia.
 
 
-```{r local_morans_I, warning=FALSE, message=FALSE, cache=FALSE}
+```{r local_morans_I, warning=FALSE, message=FALSE, cache=TRUE}
 #Run local moran's I
 LISA<-localmoran(regdata$LNMEDHVAL, queenlist)
 head(LISA)
@@ -239,7 +239,7 @@ df.LISA <-cbind(regdata, as.data.frame(LISA))
 ```
 
 
-```{r LISA_p_plot, warning=FALSE, message=FALSE, cache=FALSE, fig.cap="Figure 3."}
+```{r LISA_p_plot, warning=FALSE, message=FALSE, cache=TRUE, fig.cap="Figure 3."}
 moranSig.plot<-function(df,listw, title){
   local<-localmoran(x=df$LNMEDHVAL, listw=listw, zero.policy = FALSE)
   moran.map<-cbind(df, local)
@@ -338,7 +338,7 @@ We observe a value of 779.0 for the Jarque-Bera test with a p-value of < 0.001, 
 However, reviewing our histogram of residuals from homework 1, it seems like we do see a normal distribution of OLS residuals. There are, again, a few outliers at the both tails of the histogram that hint at possible non-normality of residuals.
 
 
-```{r spatially_weighted_resids, message=FALSE, cache=FALSE}
+```{r spatially_weighted_resids, message=FALSE}
 regdata$OLS_RESIDU <- ols$residuals
 regdata$OLS_PREDIC <- fitted(ols)
 
@@ -349,7 +349,7 @@ resnb<-sapply(queen, function(x) mean(standardised[x]))
 regdata$WT_RESIDU <- resnb
 ```
 
-```{r WT_OLS_plot, warning=FALSE, message=FALSE, cache=FALSE, fig.cap="Figure 5."}
+```{r WT_OLS_plot, warning=FALSE, message=FALSE, fig.cap="Figure 5."}
 
 
   # Create ggplot
@@ -368,7 +368,7 @@ regdata$WT_RESIDU <- resnb
 
 In this scatterplot of the OLS_RESIDU by WT_RESIDU (Figure 5.), we observe a clear positive correlation between the two variables.
 
-```{r regressing_resids, warning=FALSE, message=FALSE, cache=FALSE}
+```{r regressing_resids, warning=FALSE, message=FALSE}
 #Regressing residuals on their nearest neighbors.
 res.lm <- lm(formula=OLS_RESIDU ~ WT_RESIDU,data=regdata)
 summary(res.lm)
@@ -377,7 +377,7 @@ summary(res.lm)
 In regressing WT_RESIDU on OLS_RESIDU, we observe an R2 of 0.229. There is a clear positive correlation between the two variables.
 The slope b is 0.268 with p < 0.001, meaning that there is significant spatial autocorrelation that is slightly positive. This makes sense looking at Figure 5.
 
-```{r moran_ols_value, warning=FALSE, message=FALSE, cache=FALSE}
+```{r moran_ols_value, warning=FALSE, message=FALSE}
 moranMC_ols <- moran.mc(standardised, queenlist, 999, alternative="two.sided")
 
 result <- paste("The Global Moran's I value for OLS residuals is", round(moranMC_ols$statistic,2),",with a p-value of about ", round(moranMC_ols$p.value,5),".")
@@ -386,7 +386,7 @@ print(result)
 ```
 
 
-```{r ols_morans_hist, warning=FALSE, message=FALSE, cache=FALSE, fig.cap = "Figure 6."}
+```{r ols_morans_hist, warning=FALSE, message=FALSE, fig.cap = "Figure 6."}
 moranMCres_ols<-moranMC_ols$res
 moran_data_ols <- data.frame(Moran_I = moranMCres_ols)
 
@@ -439,7 +439,7 @@ The Moran’s I for OLS_RESIDU and Beta coefficients of weighted residuals tell 
 
 ## Spatial Lag and Spatial Error Results
 
-```{r spatial_lag_mod, warning=FALSE, message=FALSE, cache=FALSE}
+```{r spatial_lag_mod, warning=FALSE, message=FALSE}
 lagreg<-lagsarlm(formula=LNMEDHVAL ~ LNNBELPOV100 + PCTBACHMOR + PCTVACANT + PCTSINGLES, data=regdata, queenlist)
 summary(lagreg)
 LR.Sarlm(lagreg, ols) #Here lagreg is the SL output; reg is the OLS output
@@ -459,12 +459,12 @@ The Breusch-Pagan test results in a value of 210.76 (R) and 220.39 (GeoDa) with 
 
 The Spatial Lag regression resulted in an AIC of 523.48 and a Schwarz Criterion of 556.18, while these values for the OLS regression were 1432.99 and 1460.24, respectively, meaning the former regression model has a much better fit than the latter as there is less information lost. The Log Likelihood was -255.74 for the Spatial Lag regression and -711.49 for the OLS regression, again, showing that the former model has a better fit (as it has a less negative log likelihood). We observe a value of 911.51 (with p < 0.001) in the Likelihood Ratio Test for the Spatial Lag Regression, which tells us that this model is a better specification than OLS.
 
-```{r lag_resids warning=FALSE, message=FALSE, cache=FALSE}
+```{r lag_resids, warning=FALSE, message=FALSE}
 regdata$LAG_RESIDU = lagreg$residuals/sd(lagreg$residuals)
 ```
 
 
-```{r res morans value, warning=FALSE, message=FALSE, cache=FALSE}
+```{r res_morans_value, warning=FALSE, message=FALSE}
 
 reslag<-regdata$LAG_RESIDU
 lagMoranMc<-moran.mc(reslag, queenlist,999, alternative="two.sided")
@@ -475,7 +475,7 @@ print(result)
 ```
 
 
-```{r lag_morans_hist, warning=FALSE, message=FALSE, cache=FALSE, fig.cap = "Figure 7."}
+```{r lag_morans_hist, warning=FALSE, message=FALSE, fig.cap = "Figure 7."}
 lagmoranMCres<-lagMoranMc$res
 moran_data_lag <- data.frame(Moran_I = lagmoranMCres)
 
@@ -493,7 +493,7 @@ ggplot(moran_data_lag, aes(x = Moran_I)) +
 
 
 
-```{r spatial_lag_plot, warning=FALSE, message=FALSE, cache=FALSE, fig.cap="Figure 8."}
+```{r spatial_lag_plot, warning=FALSE, message=FALSE, fig.cap="Figure 8."}
 
 # Function to plot Moran's I
 moran_plot_ggplot <- function(standardised, listw) {
@@ -528,7 +528,7 @@ The Moran’s I scatter plot (Figure 8.) of spatial lag regression residuals (LA
 
 In summary, the Spatial Lag Model outperformed the OLS model in all respects.
 
-```{r spatial_err_mod warning=FALSE, message=FALSE, cache=FALSE}
+```{r spatial_err_mod, warning=FALSE, message=FALSE}
 errreg<-errorsarlm(formula=LNMEDHVAL ~ LNNBELPOV100 + PCTBACHMOR + PCTVACANT + PCTSINGLES, data=regdata, queenlist)
 reserr<-residuals(errreg)
 errresnb<-sapply(queen, function(x) mean(reserr[x]))
@@ -550,7 +550,7 @@ The Breusch-Pagan test results in a value of 23.213 (R) 210.99 (GeoDa) with p < 
 
 The Spatial Error regression resulted in an AIC of 755.38 and a Schwarz Criterion of 782.63, while these values for the OLS regression were 1432.99 and 1460.24, respectively, meaning the former regression model has a much better fit than the latter as there is less information lost. The Log Likelihood was -372.69 for the Spatial Error regression and -711.49 for the OLS regression, again, showing that the former model has a better fit (as it has a less negative log likelihood). We observe a value of 677.61 (with p < 0.001) in the Likelihood Ratio Test for the Spatial Error Regression which tells us that this model is a better specification than OLS.
 
-```{r spatial_err_moran_val, warning=FALSE, message=FALSE, cache=FALSE}
+```{r spatial_err_moran_val, warning=FALSE, message=FALSE}
 
 regdata$ERR_RESIDU = errreg$residuals/sd(errreg$residuals)
 
@@ -615,7 +615,7 @@ In sum, though the Spatial Error regression outperformed the OLS regression, the
 
 ## Geographically Weighted Regression Results
 
-```{r warning=FALSE, message=FALSE, cache=FALSE, echo=TRUE,results='hide'}
+```{r warning=FALSE, message=FALSE, cache=TRUE, echo=TRUE,results='hide'}
 #Setting an adaptive bandwidth
 shps <- as(regdata, 'Spatial')  #These analyses are easier to do when the data are of the SpatialPolygonsDataFrame class
 class (shps)
@@ -628,7 +628,7 @@ bw
 ```
 
 
-```{r warning=FALSE, message=FALSE, cache=FALSE}
+```{r warning=FALSE, message=FALSE, cache=TRUE}
 gwrmodel<-gwr(formula=LNMEDHVAL ~ LNNBELPOV100 + PCTBACHMOR + 
     PCTVACANT + PCTSINGLES,
               data=shps,
@@ -640,7 +640,7 @@ gwrmodel
 ```
 
 
-```{r warning=FALSE, message=FALSE, cache=FALSE}
+```{r gwr_results, warning=FALSE, message=FALSE}
 summary(gwrmodel$SDF)
 ```
 
@@ -649,7 +649,7 @@ Our GWR yielded an overall R-squared value of 0.85. This is an improvement over 
 The AIC of GWR was 308.71. For OLS, 41349.6. For the spatial lag model, 523.48. For the spatial error model, 755.381. A lower AIC indicates a better fit, with the GWR having the lowest AIC of all four models. Based on this metric, the GWR is a better fit to our data than the OLS, spatial lag, and spatial error models.
 
 
-```{r gwr_moran_value warning=FALSE, message=FALSE, cache=FALSE}
+```{r gwr_moran_value, warning=FALSE, message=FALSE}
 
 gwrresults<-as.data.frame(gwrmodel$SDF)
 shps$gwrE<-gwrresults$gwr.e
@@ -715,7 +715,7 @@ The Moran’s I scatter plot of the GWR residuals (Figure 11.) displays less spa
 As we'll see later, local results can vary. Some models may have R squared values near zero (see Figure 13.), which can mean that a model where the predictor is regressed on only nearby observations does not have high predictive power in that area. In this case, it is good to look at individual variables for their beta values in these individual models. We will look closer at the beta coefficients for each variable accross space in Figure 12. to examine this more.
 
 
-```{r gwr_maps, warning=FALSE, message=FALSE, cache=FALSE, fig.cap="Figure 12"}
+```{r gwr_maps, warning=FALSE, message=FALSE, fig.cap="Figure 12"}
 
 #LNNBELPOV100 + PCTBACHMOR + PCTVACANT + PCTSINGLES
 shps$coefLNNBELPOV100st<-gwrresults$LNNBELPOV100/gwrresults$LNNBELPOV100_se
@@ -754,7 +754,7 @@ The percentage of vacant housing units shows possibly significant relationships,
 
 Observing the spatial distribution of these values is one way for us to identify regional variation in our model. 
 
-```{r gwr_r2_map, warning=FALSE, message=FALSE, cache=FALSE, fig.cap="Figure 13."}
+```{r gwr_r2_map, warning=FALSE, message=FALSE, fig.cap="Figure 13."}
 gwrresults<-as.data.frame(gwrmodel$SDF)
 
 shps$gwrE<-gwrresults$gwr.e
