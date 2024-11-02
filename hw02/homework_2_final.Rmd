@@ -9,17 +9,17 @@ output:
     toc: true
     toc_float: true
     code_folding: hide
-bibliography: HW2_ref.bib
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = T, eval = T, warning = F, message = F)
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE, warning = FALSE, message = FALSE)
 
 # get rid of scientific notation
 options(scipen = 999)
 
 # load appropriate packages
 library(sf)
+library(knitr)
 library(spdep)
 library(spgwr)
 library(tmap)
@@ -29,6 +29,7 @@ library(lmtest)
 library(tseries)
 library(ggplot2)
 library(dplyr)
+
 ```
 
 # Introduction
@@ -38,10 +39,12 @@ This report iterates on our earlier work that sought to understand whether certa
 In addition to our OLS regression, we created choropleth maps of our variables and model residuals which indicated the presence of spatial autocorrelation. OLS analysis is often inappropriate when dealing with spatial data, in part due to the assumption that observations in the data are independent of one another. This assumption is violated in cases like ours where observations are spatially autocorrelated with similar values clustering together in space. In this report, we will use spatial lag, spatial error, and geographically weighted regression to improve upon our OLS model through the use of spatial methods. 
 
 
-```{r load_data,message=FALSE}
+```{r load_data,message=FALSE, include=FALSE}
+#amy wd
+queen <- read.gal("Lecture 1 - RegressionData.shp (2)/RegressionData.queen.gal", region.id=NULL, override.id=FALSE)
+queenlist<-nb2listw(queen, style = 'W')
 
-filepath <- "C:/Users/sofia/Downloads/"
-regdata <- st_read(file.path(filepath, "RegressionDataShp", "RegressionData.shp"))
+regdata <- st_read("data/Lecture 1 - RegressionData.shp/RegressionData.shp") 
 
 ```
 
@@ -61,18 +64,16 @@ The 1st Law of Geography is that “everything is related to everything else, bu
 The Moran’s I statistic is a measurement of the spatial clustering of data. Moran’s I values range between 1 (perfect spatial clustering), and -1 (perfect spatial repelling), with 0 showing no sign of spatial correlation. The formula for Moran’s I is as such: 
 
 $$
-
 Moran's\ I = \frac{N}{\sum_{i} \sum_{j} w_{ij}} \frac{\sum_{i} \sum_{j} w_{ij} (x_i - \bar{x})(x_j - \bar{x})}{\sum_{i} (x_i - \bar{x})^2}
-
 $$
 
 Where
 
 - $N$: The total number of spatial units (observations).
-- $ x_i $: The value of the variable at location $ i $.
-- $ x_j $: The value of the variable at location $ j $.
-- $ \bar{x} $: The mean value of the variable across all locations.
-- $ w_{ij} $: The spatial weight between locations $ i $ and $ j $ (typically set to 1 if $ i $ and $ j $ are neighbors, and 0 otherwise).
+- $x_i$: The value of the variable at location $i$.
+- $x_j$: The value of the variable at location $j$.
+- $\bar{x}$: The mean value of the variable across all locations.
+- $w_{ij}$: The spatial weight between locations $i$ and $j$ (typically set to 1 if $i$ and $j$ are neighbors, and 0 otherwise).
 
 
 This formula is an expansion of the correlation coefficient statistic to accommodate relations between variables that are near each other as accounted for by the weights.
@@ -97,38 +98,38 @@ When data has a spatial component, the assumption that errors are random and ind
 
 GeoDa or R, the tools used for OLS regression, also provide methods to test other regression assumptions.
 
-1. **Homoscedasticity:** This assumption is tied to the independence of errors. In GeoDa/R, tests such as the Breusch-Pagan test and the White test are commonly used to examine data for heteroscedasticity. The null hypothesis (H₀) for these tests states that there is homoscedasticity (constant variance of errors), while the alternative hypothesis (H₁) states that heteroscedasticity is present (non-constant variance of errors).
+1. **Homoscedasticity:** This assumption is tied to the independence of errors. In GeoDa/R, tests such as the Breusch-Pagan test and the White test are commonly used to examine data for heteroscedasticity. The null hypothesis ($H_0$) for these tests states that there is homoscedasticity (constant variance of errors), while the alternative hypothesis ($H_1$) states that heteroscedasticity is present (non-constant variance of errors).
 
-2. **Normality of Errors:** The assumption of normality of errors can be tested using the Shapiro-Wilk test in GeoDa/R. The null hypothesis (H₀) for this test states that the errors are normally distributed, while the alternative hypothesis (H₁) posits that the errors are not normally distributed.
+2. **Normality of Errors:** The assumption of normality of errors can be tested using the Shapiro-Wilk test in GeoDa/R. The null hypothesis ($H_0$) for this test states that the errors are normally distributed, while the alternative hypothesis ($H_1$) posits that the errors are not normally distributed.
 
 ## Spatial Lag and Spatial Error Regression
 
 Both GeoDa and R will be utilized for running spatial lag and spatial error regressions in this analysis.
 
 Spatial lag regression incorporates space into the model by using the dependent variable’s values nearby (or spatially lagged) to the observed point as a predictor variable in the model. The model equation can be expressed as:
-
 $$
 Y = \beta_0 + \rho W Y + \beta_1 X_1 + ... + \beta_n X_n + \epsilon
 $$
-Where:
--$Y$ is the dependent variable.
--$beta_0$ is the intercept.
--$\rho$ is the spatial autoregressive coefficient, representing the degree of spatial dependence.
--$W Y$ is the spatially lagged dependent variable, which captures the influence of neighboring values of $Y$.
--$beta_1,...,beta_n$ are the coefficients for the independent variables
--$epsilon$ is the error term, capturing unobserved factors.
+Where
+
+- $Y$ is the dependent variable.
+- $beta_0$ is the intercept.
+- $\rho$ is the spatial autoregressive coefficient, representing the degree of spatial dependence.
+- $W Y$ is the spatially lagged dependent variable, which captures the influence of neighboring values of $Y$.
+- $beta_1,...,beta_n$ are the coefficients for the independent variables.
+- $epsilon$ is the error term, capturing unobserved factors.
 
 Spatial error regression addresses spatial autocorrelation in the error term rather than the dependent variable itself. It uses a spatial lag of the error term as a predictor in the model. The model equation for the spatial error model is:
-
 $$
 Y = \beta_0 + \beta_1 X_1 + ... + \beta_n X_n + \lambda W\epsilon + u
 $$
-Where:
--$Y$ is the dependent variable.
--$beta_0$ is the intercept.
--$\lambda W\epsilon$ is the spatially lagged error, which captures the influence of neighboring values of $\epsilon$.
--$beta_1,...,beta_n$ are the coefficients for the independent variables
--$u$ is the random noise term, capturing unobserved factors.
+Where
+
+- $Y$ is the dependent variable.
+- $beta_0$ is the intercept.
+- $\lambda W\epsilon$ is the spatially lagged error, which captures the influence of neighboring values of $\epsilon$.
+- $beta_1,...,beta_n$ are the coefficients for the independent variables.
+- $u$ is the random noise term, capturing unobserved factors.
 
 The assumptions required for OLS regression remain applicable to both spatial lag and spatial error regression models, with the exception of the assumption regarding the spatial independence of observations.
 
@@ -141,8 +142,8 @@ The results of the spatial lag regression will be compared to the OLS regression
 3. **Likelihood Ratio Test:** This test compares the goodness-of-fit between two models, with the null hypothesis stating that the simpler model (e.g., OLS) is sufficient, while the alternative hypothesis posits that the more complex model (e.g., spatial model) provides a significantly better fit.
 
 Additionally, another way to compare OLS results with spatial lag and spatial error results is by examining the Moran’s I statistic of the regression residuals. A significant Moran’s I indicates the presence of spatial autocorrelation in the residuals, suggesting that the spatial models may be more appropriate. If the spatial models exhibit reduced Moran’s I values, this would indicate improved performance over OLS.
-## Geographically Weighted Regression 
 
+## Geographically Weighted Regression 
 Simpson’s paradox says that what is true for the whole might not be true for subgroups, and vice versa. Disaggregating data can give us a better glance at what’s going on in different geographic areas. GWR helps us do this by running local regressions and estimating beta parameters around each observation. We run a model to describe the relationship between the dependent variable and predictors around a specific location (every observation in the data set). When running a regression for location i, GWR assigns greater weights to observations that are closer to location i.
 (defining proximity to say which neighbors have a stronger weight is up to the researcher -- various methods: include neighbors whose centroids are within one mile of location i; include 50 nearest neighbors). Weight of observation varies with location i. 
 GWR requires a large number of observations (at least 300). Otherwise, you’re basically running a global regression for each “local” regression.
@@ -161,7 +162,7 @@ Since we run a regression for every observation, we would be conducting thousand
 
 ## Spatial Autocorrelation
 
-```{r queen_matrix, warning=FALSE, message=FALSE}
+```{r queen_matrix, warning=FALSE, message=FALSE, include=FALSE}
 queen<-poly2nb(regdata, row.names=regdata$POLY_ID)
 
 queenlist<-nb2listw(queen, style = 'W')
@@ -617,7 +618,7 @@ In sum, though the Spatial Error regression outperformed the OLS regression, the
 
 ```{r warning=FALSE, message=FALSE, cache=TRUE, echo=TRUE,results='hide'}
 #Setting an adaptive bandwidth
-shps <- as(regdata, 'Spatial')  #These analyses are easier to do when the data are of the SpatialPolygonsDataFrame class
+shps <- as_Spatial(regdata)  #These analyses are easier to do when the data are of the SpatialPolygonsDataFrame class
 class (shps)
 bw<-gwr.sel(formula=LNMEDHVAL ~ LNNBELPOV100 + PCTBACHMOR + 
     PCTVACANT + PCTSINGLES, 
@@ -653,10 +654,11 @@ The AIC of GWR was 308.71. For OLS, 41349.6. For the spatial lag model, 523.48. 
 
 gwrresults<-as.data.frame(gwrmodel$SDF)
 shps$gwrE<-gwrresults$gwr.e
+shps$localR2<-gwrresults$localR2
 
-regdata$GWR_RESIDU = shps$gwrE/sd(shps$gwrE)
-resgwr<-regdata$GWR_RESIDU
-GwrMoranMc<-moran.mc(resgwr, queenlist,999, alternative="two.sided")
+#regdata$GWR_RESIDU = shps$gwrE/sd(shps$gwrE) commenting these lines out since gwr.e provides standardized residuals
+#resgwr<-regdata$GWR_RESIDU
+GwrMoranMc<-moran.mc(gwrresults$gwr.e, queenlist,999, alternative="two.sided")
 
 result <- paste("The Global Moran's I value for the residuals for the spatial gwr model is about ", round(GwrMoranMc$statistic,2),", with a p-value of about ", round(GwrMoranMc$p.value,3),".")
 
@@ -669,7 +671,7 @@ moran_data_gwr <- data.frame(Moran_I = GwrMoranMCres)
 
 ggplot(moran_data_gwr, aes(x = Moran_I)) +
   geom_histogram(bins = 100, fill = "lightblue", color = "black", aes(y = ..count..)) +
-  geom_vline(aes(xintercept = moran(regdata$GWR_RESIDU, queenlist, 
+  geom_vline(aes(xintercept = moran(gwrresults$gwr.e, queenlist, 
                                      n = length(queenlist$neighbours), 
                                      S0 = Szero(queenlist))$`I`), 
              color = "red", linetype = "dashed", size = 1) +
@@ -707,7 +709,7 @@ moran_plot_ggplot <- function(standardised, listw) {
 }
 
 # Call the function
-moran_plot_ggplot(listw =queenlist, standardised = regdata$GWR_RESIDU)
+moran_plot_ggplot(listw =queenlist, gwrresults$gwr.e)
 ```
 
 The Moran’s I scatter plot of the GWR residuals (Figure 11.) displays less spatial autocorrelation than the other three models. Our scatter plot of the OLS residuals showed a moderate linear relationship between the residuals and the lagged residuals with a Moran’s I statistic of 0.313, suggesting positive spatial autocorrelation. The Spatial Lag model has a lower Moran’s I statistic at -0.082 and shows a much weaker, negative relationship between the residuals and the lagged residuals. The Spatial Error model is similar; the Moran’s I statistic is -0.095 and the plot shows a similar negative relationship between the residuals, where there is still some spatial autocorrelation. The GWR residuals have no clear relationship with the lagged residuals and the Moran’s I statistic is smaller than the rest at 0.03. This indicates that the GWR is better suited to address the autocorrelation in our data.
@@ -723,22 +725,24 @@ shps$coefPCTBACHMORst<-gwrresults$PCTBACHMOR/gwrresults$PCTBACHMOR_se
 shps$coefPCTVACANTst<-gwrresults$PCTVACANT/gwrresults$PCTVACANT_se
 shps$coefPCTSINGLESst<-gwrresults$PCTSINGLES/gwrresults$PCTSINGLES_se
 
-coefLNNBELPOV100<-tm_shape(shps)+
+shps.sf <- st_as_sf(shps)
+
+coefLNNBELPOV100<-tm_shape(shps.sf)+
   tm_fill(col='coefLNNBELPOV100st', breaks=c(-Inf, -2, 0, 2, Inf), title='Standardized coefficient of LNNBELPOV100', 
           palette ='-RdBu')+
   tm_layout(frame=FALSE, title = 'Number of Households in Poverty (Log)',inner.margins = 0.2)
 
-coefPCTBACHMOR<-tm_shape(shps)+
+coefPCTBACHMOR<-tm_shape(shps.sf)+
   tm_fill(col='coefPCTBACHMORst', breaks=c(-Inf, -2, 0, 2, Inf), title='Standardized coefficient of PCTBACHMOR', 
           palette='-RdBu')+
   tm_layout(frame=FALSE, title = 'Percentage of People with Bachelors Degrees',inner.margins = 0.2)
 
-coefPCTVACANT<-tm_shape(shps)+
+coefPCTVACANT<-tm_shape(shps.sf)+
   tm_fill(col='coefPCTVACANTst', breaks=c(-Inf, -2, 0, 2, Inf), title='Standardized coefficient of PCTVACANT', 
           palette='-RdBu')+
   tm_layout(frame=FALSE, title = 'Percentage of Housing Vacant',inner.margins = 0.2)
 
-coefPCTSINGLES<-tm_shape(shps)+
+coefPCTSINGLES<-tm_shape(shps.sf)+
   tm_fill(col='coefPCTSINGLESst', breaks=c(-Inf, -2, 0, 2, Inf), title='Standardized coefficient of PCTSINGLES', 
           palette ='-RdBu')+
   tm_layout(frame=FALSE, title = 'Percent Single Family Households',inner.margins = 0.2)
@@ -755,12 +759,12 @@ The percentage of vacant housing units shows possibly significant relationships,
 Observing the spatial distribution of these values is one way for us to identify regional variation in our model. 
 
 ```{r gwr_r2_map, warning=FALSE, message=FALSE, fig.cap="Figure 13."}
-gwrresults<-as.data.frame(gwrmodel$SDF)
+#gwrresults<-as.data.frame(gwrmodel$SDF) ran earlier
 
-shps$gwrE<-gwrresults$gwr.e
-shps$localR2<-gwrresults$localR2
+#shps$gwrE<-gwrresults$gwr.e
+#shps$localR2<-gwrresults$localR2
 
-tm_shape(shps)+
+tm_shape(shps.sf)+
   tm_fill(col='localR2', breaks=c(0, 0.27,0.4,0.53,0.67, Inf), title='Local R Squared of Globally Weighted Regression', 
           palette ='-RdBu')+
   tm_layout(frame=FALSE, title = 'GWR Model R Squared Values')
