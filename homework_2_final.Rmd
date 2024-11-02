@@ -9,6 +9,7 @@ output:
     code_folding: hide
   pdf_document:
     toc: true
+bibliography: HW2_ref.bib
 ---
 
 ```{r setup, include=FALSE}
@@ -41,14 +42,15 @@ In addition to our OLS regression, we created choropleth maps of our variables a
 
 ```{r load_data,message=FALSE, include=FALSE}
 #amy wd
-# queen <- read.gal("Lecture 1 - RegressionData.shp (2)/RegressionData.queen.gal", region.id=NULL, override.id=FALSE)
-queen <- read.gal("data/HW02_RegressionData.gal", 
-                  region.id = NULL,
-                  override.id = FALSE)
+queen <- read.gal("Lecture 1 - RegressionData.shp (2)/RegressionData.queen.gal",
+                  region.id=NULL, override.id=FALSE)
+#queen <- read.gal("data/HW02_RegressionData.gal", 
+#                  region.id = NULL,
+#                  override.id = FALSE)
 queenlist <- nb2listw(queen, style = 'W')
 
-# regdata <- st_read("data/Lecture 1 - RegressionData.shp/RegressionData.shp")
-regdata <- st_read("data/HW02_RegressionData.shp") 
+regdata <- st_read("data/Lecture 1 - RegressionData.shp/RegressionData.shp")
+#regdata <- st_read("data/HW02_RegressionData.shp") 
 
 ```
 
@@ -251,8 +253,9 @@ moranSig.plot<-function(df,listw, title){
   moran.map<-cbind(df, local)
   #Here, col='Pr.z....E.Ii..' is the name of the column in the dataframe df.LISA that we're trying to plot. This variable name might change based on the version of the package.
   tm<-tm_shape(moran.map)+
-    tm_borders(col='transparent')+
-    tm_fill(style='fixed', col='Pr.z....E.Ii..', breaks=c(0,0.001, 0.01, 0.05, 1), title= 'Local Moran\'s I Significance Map', palette = '-BuPu')+
+    #tm_borders(col='transparent')+
+    tm_polygons('Pr.z....E.Ii..', style='fixed',breaks=c(0,0.001, 0.01, 0.05, 1), 
+            title= 'Local Moran\'s I Significance Map', palette = '-BuPu')+
     tm_layout(frame = FALSE, title = title,title.size = 1,  title.position = c("center", "top"),inner.margins = 0.1)
   print(tm)
 }
@@ -622,7 +625,7 @@ In sum, though the Spatial Error regression outperformed the OLS regression, the
 
 ## Geographically Weighted Regression Results
 
-```{r defining_bw warning=FALSE, message=FALSE, cache=TRUE, echo=TRUE,results='hide'}
+```{r defining_bw, warning=FALSE, message=FALSE, cache=TRUE, echo=TRUE,results="hide"}
 #Setting an adaptive bandwidth
 shps <- as_Spatial(regdata)  #These analyses are easier to do when the data are of the SpatialPolygonsDataFrame class
 class (shps)
@@ -635,7 +638,7 @@ bw
 ```
 
 
-```{r gwr_model warning=FALSE, message=FALSE, cache=TRUE}
+```{r gwr_model, warning=FALSE, message=FALSE, cache=TRUE}
 gwrmodel<-gwr(formula=LNMEDHVAL ~ LNNBELPOV100 + PCTBACHMOR + 
     PCTVACANT + PCTSINGLES,
               data=shps,
@@ -733,27 +736,39 @@ shps$coefPCTSINGLESst<-gwrresults$PCTSINGLES/gwrresults$PCTSINGLES_se
 
 shps.sf <- st_as_sf(shps)
 
-coefLNNBELPOV100<-tm_shape(shps.sf)+
-  tm_fill(col='coefLNNBELPOV100st', breaks=c(-Inf, -2, 0, 2, Inf), title='Standardized coefficient of LNNBELPOV100', 
-          palette ='-RdBu')+
-  tm_layout(frame=FALSE, title = 'Number of Households in Poverty (Log)',inner.margins = 0.2)
+PCTVACANT <- tm_shape(shps.sf)+
+  tm_polygons(fill="coefPCTVACANTst", col="grey60", lwd = 0.2,
+              fill.legend = tm_legend(title = "", position = tm_pos_in("right", "bottom")),
+              tm_scale_intervals(values = "tableau.red_blue_white_diverging",
+                                 breaks=c(-Inf, -2, 0, 2, Inf)))+
+  tm_title(text="Percent vacant housing units",  fontface="bold", fontfamily="Palatino",
+           position = tm_pos_out("center", "top"))
 
-coefPCTBACHMOR<-tm_shape(shps.sf)+
-  tm_fill(col='coefPCTBACHMORst', breaks=c(-Inf, -2, 0, 2, Inf), title='Standardized coefficient of PCTBACHMOR', 
-          palette='-RdBu')+
-  tm_layout(frame=FALSE, title = 'Percentage of People with Bachelors Degrees',inner.margins = 0.2)
+LNNBELPOV <- tm_shape(shps.sf)+
+  tm_polygons(fill="coefLNNBELPOV100st",col="grey60", lwd = 0.2,
+              fill.legend = tm_legend(title = "", position = tm_pos_in("right", "bottom")),
+              tm_scale_intervals(values = "tableau.red_blue_white_diverging",
+              breaks=c(-Inf, -2, 0, 2, Inf)))+
+  tm_title(text="Number of Households in Poverty (Log)", fontface="bold", fontfamily="Palatino",
+           position = tm_pos_out("center", "top"))
 
-coefPCTVACANT<-tm_shape(shps.sf)+
-  tm_fill(col='coefPCTVACANTst', breaks=c(-Inf, -2, 0, 2, Inf), title='Standardized coefficient of PCTVACANT', 
-          palette='-RdBu')+
-  tm_layout(frame=FALSE, title = 'Percentage of Housing Vacant',inner.margins = 0.2)
+PCTBACH <- tm_shape(shps.sf)+
+  tm_polygons(fill="coefPCTBACHMORst", col="grey60", lwd = 0.2,
+              fill.legend = tm_legend(title = "", position = tm_pos_in("right", "bottom")),
+              tm_scale_intervals(values = "tableau.red_blue_white_diverging",
+                                 breaks=c(-Inf, -2, 0, 2, Inf)))+
+  tm_title(text="Percent of residents with Bachelor's  \nDegree or higher", fontface="bold", fontfamily="Palatino",
+           position = tm_pos_out("center", "top"))
 
-coefPCTSINGLES<-tm_shape(shps.sf)+
-  tm_fill(col='coefPCTSINGLESst', breaks=c(-Inf, -2, 0, 2, Inf), title='Standardized coefficient of PCTSINGLES', 
-          palette ='-RdBu')+
-  tm_layout(frame=FALSE, title = 'Percent Single Family Households',inner.margins = 0.2)
+PCTSINGLES <- tm_shape(shps.sf)+
+  tm_polygons(fill="coefPCTSINGLESst",col="grey60", lwd = 0.2,
+              fill.legend = tm_legend(title = "", position = tm_pos_in("right", "bottom")),
+              tm_scale_intervals(values = "tableau.red_blue_white_diverging",
+                                 breaks=c(-Inf, -2, 0, 2, Inf)))+
+  tm_title(text="Percent of detached single-family homes", fontface="bold", fontfamily="Palatino",
+           position = tm_pos_out("center", "top"))
 
-tmap_arrange(coefLNNBELPOV100, coefPCTBACHMOR,coefPCTVACANT, coefPCTSINGLES, ncol=2)
+tmap_arrange(PCTVACANT, LNNBELPOV, PCTBACH, PCTSINGLES)
 ```
 
 Dividing the coefficients of the local regressions by their standard errors allows us to identify which predictors have a possibly significant relationship with the dependent variable. A coefficient/standard error value of -2 or less indicates a negative relationship with the dependent variable that is possibly significant. A coefficient/standard error value of 2 or greater indicates a positive relationship with the dependent variable that is possibly significant. Coefficient/standard error values falling between -2 and 0 or 0 and 2 represent negative and positive relationships with the dependent variable, respectively, but it is unlikely that these relationships are significant. When mapping the spatial distribution of these values, we specified our breaks and color scale to make negative, possibly significant relationships dark red; and positive, possibly significant relationships dark blue.
@@ -770,11 +785,17 @@ Observing the spatial distribution of these values is one way for us to identify
 #shps$gwrE<-gwrresults$gwr.e
 #shps$localR2<-gwrresults$localR2
 
-tm_shape(shps.sf)+
-  tm_fill(col='localR2', breaks=c(0, 0.27,0.4,0.53,0.67, Inf), title='Local R Squared of Globally Weighted Regression', 
-          palette ='-RdBu')+
-  tm_layout(frame=FALSE, title = 'GWR Model R Squared Values')
+#tm_shape(shps.sf)+
+ # tm_polygons(fill="localR2", title='Local R Squared of Globally Weighted Regression', 
+  #        tm_scale_intervals(values = "tableau.red_blue_white_diverging", breaks = c(0,0.27,0.4, 0.53,0.67, Inf)))+
+  #tm_layout(frame=FALSE, title = 'GWR Model R Squared Values')
 
+tm_shape(shps.sf)+
+  tm_polygons("localR2", col="grey60", lwd = 0.2,
+              fill.legend = tm_legend(title = "", position = tm_pos_in("right", "bottom")),
+              tm_scale_intervals(values = "carto.peach", breaks = c(0,0.27,0.4, 0.53,0.67, Inf)))+
+  tm_title(text="Local R Squared of Globally Weighted Regression", size=1.2, fontface="bold", fontfamily="Palatino",
+           position = tm_pos_out("center", "top"))
 ```
 
 This choropleth map visualizes the local R-squared values for each point in the GWR (Figure 15), which represent how much of the variance in the dependent variable is explained by the local regression model. Local R-squared values differ across each local regression, meaning that our model explains more variation in some areas than others. These differences highlight the areas where our selected characteristics are not good predictors of median house value.
