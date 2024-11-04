@@ -1,0 +1,26 @@
+---
+title: "Examining Predictors of Car Crashes Caused by Alcohol Using Logistic Regression"
+author: "Akira Di Sandro, Sofia Fasullo, Amy Solano"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T, eval = T, warning = F, message = F)
+
+# get rid of scientific notation
+options(scipen = 999)
+
+# set working directory
+# setwd("~/Library/Mobile Documents/com~apple~CloudDocs/Documents/MUSA/Fall24/MUSA5000_Stats/MUSA5000_Stats/hw03")
+
+# load packages
+library(tidyverse)
+
+```
+
+
+```{r load_data}
+data <- read.csv("data/Logistic Regression Data.csv")
+```
+
