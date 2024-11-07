@@ -2,7 +2,13 @@
 title: "Examining Predictors of Car Crashes Caused by Alcohol Using Logistic Regression"
 author: "Akira Di Sandro, Sofia Fasullo, Amy Solano"
 date: "`r Sys.Date()`"
-output: html_document
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+  pdf_document:
+    toc: true
 ---
 
 ```{r setup, include=FALSE}
@@ -16,11 +22,169 @@ options(scipen = 999)
 
 # load packages
 library(tidyverse)
+library(aod)
+library(ggplot2)
+library(rms)
+library(gmodels)
+library(nnet)
+library(DAAG)
+library(ROCR)
+library(xtable)
+library(kableExtra)
 
 ```
 
 
 ```{r load_data}
 data <- read.csv("data/Logistic Regression Data.csv")
+```
+
+
+
+```{r tabulate_DV}
+DRINKING_D.table <- table(data$DRINKING_D)
+#     0     1 
+# 40879  2485
+
+DRINKING_D.proptable <- prop.table(DRINKING_D.table)
+
+# kable for DRINKING_D.proptable
+data.frame(DRINKING_D.proptable) %>% 
+  mutate(`Drunk Driver Involved?` = ifelse(Var1 == 0, "No", "Yes"),
+         `Drunk Driver Involved?` = factor(`Drunk Driver Involved?`, levels = c("Yes", "No")),
+         Proportion = round(Freq, 3)) %>% 
+  arrange(`Drunk Driver Involved?`) %>% 
+  dplyr::select(`Drunk Driver Involved?`, Proportion) %>% 
+  kbl(caption = "Table 1. Proportion of Crashes that involved a Drunk Driver",
+      align = "cc") %>% 
+  kable_styling() %>%
+  kable_classic(full_width = F, html_font = "Cambria") 
+
+```
+
+
+```{r crossTables}
+drinking_fatal <- CrossTable(data$DRINKING_D, data$FATAL_OR_M, 
+                             prop.r = F, prop.chisq = F, chisq = T, prop.t = F)
+
+drinking_overturned <- CrossTable(data$DRINKING_D, data$OVERTURNED, 
+                                  prop.r = F, prop.chisq = F, chisq = T, prop.t = F)
+
+drinking_cell <- CrossTable(data$DRINKING_D, data$CELL_PHONE, 
+                            prop.r = F, prop.chisq = F, chisq = T, prop.t = F)
+
+drinking_speed <- CrossTable(data$DRINKING_D, data$SPEEDING, 
+                             prop.r = F, prop.chisq = F, chisq = T, prop.t = F)
+
+drinking_aggr <- CrossTable(data$DRINKING_D, data$AGGRESSIVE, 
+                            prop.r = F, prop.chisq = F, chisq = T, prop.t = F)
+
+drinking_driver1617 <- CrossTable(data$DRINKING_D, data$DRIVER1617, 
+                                  prop.r = F, prop.chisq = F, chisq = T, prop.t = F)
+
+drinking_driver65plus <- CrossTable(data$DRINKING_D, data$DRIVER65PLUS, 
+                                    prop.r = F, prop.chisq = F, chisq = T, prop.t = F)
+
+# kable of all crosstables
+crossTable <- data.frame(
+  IV = c("FATAL_OR_M: Crash resulted in fatality or major injury",
+         "OVERTURNED: Crash involved an overturned vehicle",
+         "CELL_PHONE: Driver was using cell phone",
+         "SPEEDING: Crash involved speeding car",
+         "AGGRESSIVE: Crash involved aggressive driving",
+         "DRIVER1617: Crash involved at least one driver who was 16 or 17 years old",
+         "DRIVER65PLUS: Crash involved at least one driver who was at least 65 years old"),
+  no_alc_N = c(drinking_fatal$t[1,2],
+               drinking_overturned$t[1,2],
+               drinking_cell$t[1,2],
+               drinking_speed$t[1,2],
+               drinking_aggr$t[1,2],
+               drinking_driver1617$t[1,2],
+               drinking_driver65plus$t[1,2]),
+  no_alc_perc= c(paste0(round(drinking_fatal$prop.row[1,2]*100, 2), "%"),
+                 paste0(round(drinking_overturned$prop.row[1,2]*100, 2), "%"),
+                 paste0(round(drinking_cell$prop.row[1,2]*100, 2), "%"),
+                 paste0(round(drinking_speed$prop.row[1,2]*100, 2), "%"),
+                 paste0(round(drinking_aggr$prop.row[1,2]*100, 2), "%"),
+                 paste0(round(drinking_driver1617$prop.row[1,2]*100, 2), "%"),
+                 paste0(round(drinking_driver65plus$prop.row[1,2]*100, 2), "%")),
+  alc_N = c(drinking_fatal$t[2,2],
+            drinking_overturned$t[2,2],
+            drinking_cell$t[2,2],
+            drinking_speed$t[2,2],
+            drinking_aggr$t[2,2],
+            drinking_driver1617$t[2,2],
+            drinking_driver65plus$t[2,2]),
+  alc_perc= c(paste0(round(drinking_fatal$prop.row[2,2]*100, 2), "%"),
+              paste0(round(drinking_overturned$prop.row[2,2]*100, 2), "%"),
+              paste0(round(drinking_cell$prop.row[2,2]*100, 2), "%"),
+              paste0(round(drinking_speed$prop.row[2,2]*100, 2), "%"),
+              paste0(round(drinking_aggr$prop.row[2,2]*100, 2), "%"),
+              paste0(round(drinking_driver1617$prop.row[2,2]*100, 2), "%"),
+              paste0(round(drinking_driver65plus$prop.row[2,2]*100, 2), "%")),
+  total = c(sum(drinking_fatal$t[,2]),
+            sum(drinking_overturned$t[,2]),
+            sum(drinking_cell$t[,2]),
+            sum(drinking_speed$t[,2]),
+            sum(drinking_aggr$t[,2]),
+            sum(drinking_driver1617$t[,2]),
+            sum(drinking_driver65plus$t[,2])),
+  chi_p = c(round(drinking_fatal$chisq$p.value,3),
+            round(drinking_overturned$chisq$p.value,3),
+            round(drinking_cell$chisq$p.value,3),
+            round(drinking_speed$chisq$p.value,3),
+            round(drinking_aggr$chisq$p.value,3),
+            round(drinking_driver1617$chisq$p.value,3),
+            round(drinking_driver65plus$chisq$p.value,3))
+)
+
+crossTable %>% 
+  kbl(caption = "Table 2. Cross-Tabulation of DV and Binary Predictors",
+      align = "lcccccc",
+      col.names = c("", rep(c("N", "%"), 2), "N", "χ2 p-value")) %>% 
+  add_header_above(
+    header = c(" " = 1, "No Alcohol Involved\n(DRINKING_D = 0)" = 2, "Alcohol Involved\n(DRINKING_D = 1)" = 2, "Total" = 1, " " = 1),
+    align = "c") %>% 
+  kable_styling() %>%
+  kable_classic(full_width = F, html_font = "Cambria") 
+
+```
+
+```{r meansContinuous}
+cont_means <- data %>% 
+  group_by(DRINKING_D) %>% 
+  summarise(PCTBACHMOR_mean = mean(PCTBACHMOR, na.rm = T),
+            PCTBACHMOR_sd = sd(PCTBACHMOR, na.rm = T),
+            MEDHHINC_mean = mean(MEDHHINC, na.rm = T),
+            MEDHHINC_sd = sd(MEDHHINC, na.rm = T))
+
+t_pctbachmor <- t.test(data$PCTBACHMOR ~ data$DRINKING_D)
+t_medhhinc <- t.test(data$MEDHHINC ~ data$DRINKING_D)
+
+cont_means_table <- data.frame(
+  IV = c("PCTBACHMOR: % with bachelor’s degree or more",
+         "MEDHHINC: Median household income"),
+  no_alc_mean = c(paste0(format(round(cont_means$PCTBACHMOR_mean[1], 1), nsmall = 1), "%"),
+                  paste0("$",format(round(cont_means$MEDHHINC_mean[1], 2), big.mark = ",", nsmall = 2))),
+  no_alc_sd = c(paste0(format(round(cont_means$PCTBACHMOR_sd[1], 1), nsmall = 1), "%"),
+                paste0("$",format(round(cont_means$MEDHHINC_sd[1], 2), big.mark = ",", nsmall = 2))),
+  alc_mean = c(paste0(format(round(cont_means$PCTBACHMOR_mean[2], 1), nsmall = 1), "%"),
+               paste0("$",format(round(cont_means$MEDHHINC_mean[2], 2), big.mark = ",", nsmall = 2))),
+  alc_sd = c(paste0(format(round(cont_means$PCTBACHMOR_sd[2], 1), nsmall = 1), "%"),
+             paste0("$",format(round(cont_means$MEDHHINC_sd[2], 2), big.mark = ",", nsmall = 2))),
+  t_p = c(round(t_pctbachmor$p.value, 3),
+          round(t_medhhinc$p.value,3))
+)
+
+cont_means_table %>% 
+  kbl(caption = "Table 3. Group Means for Continuous Predictors",
+      align = "lccccc",
+      col.names = c("", rep(c("mean", "SD"), 2), "t-test p-value")) %>% 
+  add_header_above(
+    header = c(" " = 1, "No Alcohol Involved\n(DRINKING_D = 0)" = 2, "Alcohol Involved\n(DRINKING_D = 1)" = 2, " " = 1),
+    align = "c") %>% 
+  kable_styling() %>%
+  kable_classic(full_width = F, html_font = "Cambria") 
+
 ```
 
