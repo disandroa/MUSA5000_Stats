@@ -21,6 +21,7 @@ library(xtable)
 library(dplyr)
 library(tidycensus)
 library(kableExtra)
+library(ggcorrplot)
 
 ```
 
@@ -40,7 +41,7 @@ DRINKING_D.tab #counts
 ```
 
 ```{r cross_tbl, results='hide'}
-ct_fatal <- CrossTable(df$DRINKING_D, df$FATAL_OR_M, )
+ct_fatal <- CrossTable(df$DRINKING_D, df$FATAL_OR_M)
 ct_overturned <- CrossTable(df$DRINKING_D, df$OVERTURNED)
 ct_cell <- CrossTable(df$DRINKING_D, df$CELL_PHONE)
 ct_speed <- CrossTable(df$DRINKING_D, df$SPEEDING)
@@ -49,19 +50,177 @@ ct_1617 <- CrossTable(df$DRINKING_D,df$DRIVER1617)
 ct_65 <- CrossTable(df$DRINKING_D,df$DRIVER65PLUS)
 ```
 
-```{r table}
+```{r calculate_data}
 predictors <- c("FATAL_OR_M","OVERTURNED","CELL_PHONE","SPEEDING","AGGRESSIVE","DRIVER1617","DRIVER65PLUS")
 
 thing <- c(ct_fatal,ct_overturned,ct_cell,ct_speed,ct_aggressive,ct_1617,ct_65)
 
 
-ct_total_nodrink <- c(ct_fatal$t[,2][1],ct_overturned$t[,2][1],ct_speed$t[,2][1],ct_aggressive$t[,2][1],ct_1617$t[,2][1],ct_65$t[,2][1]) 
+ct_total_nodrink <- c(ct_fatal$t[,2][1],ct_overturned$t[,2][1],ct_cell$t[,2][1],ct_speed$t[,2][1],ct_aggressive$t[,2][1],ct_1617$t[,2][1],ct_65$t[,2][1]) 
 
-ct_total_drink <- c(ct_fatal$t[,2][2],ct_overturned$t[,2][2],ct_speed$t[,2][2],ct_aggressive$t[,2][2],ct_1617$t[,2][2],ct_65$t[,2][2]) 
+ct_total_drink <- c(ct_fatal$t[,2][2],ct_overturned$t[,2][2],ct_cell$t[,2][2],ct_speed$t[,2][2],ct_aggressive$t[,2][2],ct_1617$t[,2][2],ct_65$t[,2][2]) 
+
+ct_pct_nodrink <- c(round(ct_fatal$prop.row[,2][1],3),round(ct_overturned$prop.row[,2][1],3),round(ct_cell$prop.row[,2][1],3),round(ct_speed$prop.row[,2][1],3),round(ct_aggressive$prop.row[,2][1],3),round(ct_1617$prop.row[,2][1],3),round(ct_65$prop.row[,2][1],3))
+
+ct_pct_drink <- c(round(ct_fatal$prop.row[,2][2],3),round(ct_overturned$prop.row[,2][2],3),round(ct_cell$prop.row[,2][2],3),round(ct_speed$prop.row[,2][2],3),round(ct_aggressive$prop.row[,2][2],3),round(ct_1617$prop.row[,2][2],3),round(ct_65$prop.row[,2][2],3))
 
 
 ```
 
+```{r create_table}
+
+table <- data.frame(predictors,ct_total_nodrink, ct_pct_nodrink, ct_total_drink, ct_pct_drink)
+print(table)
+```
+
+```{r ct_chi,results='hide'}
+ct_chi_fatal <- CrossTable(df$DRINKING_D,df$FATAL_OR_M,prop.r=FALSE,prop.t=FALSE,prop.chisq=FALSE, chisq=TRUE)
+ct_chi_overturned <- CrossTable(df$DRINKING_D,df$OVERTURNED,prop.r=FALSE,prop.t=FALSE,prop.chisq=FALSE, chisq=TRUE)
+ct_chi_cell <- CrossTable(df$DRINKING_D,df$CELL_PHONE,prop.r=FALSE,prop.t=FALSE,prop.chisq=FALSE, chisq=TRUE)
+ct_chi_speed <- CrossTable(df$DRINKING_D,df$SPEEDING,prop.r=FALSE,prop.t=FALSE,prop.chisq=FALSE, chisq=TRUE)
+ct_chi_aggressive <- CrossTable(df$DRINKING_D,df$AGGRESSIVE,prop.r=FALSE,prop.t=FALSE,prop.chisq=FALSE, chisq=TRUE)
+ct_chi_1617 <- CrossTable(df$DRINKING_D,df$DRIVER1617,prop.r=FALSE,prop.t=FALSE,prop.chisq=FALSE, chisq=TRUE)
+ct_chi_65 <- CrossTable(df$DRINKING_D,df$DRIVER65PLUS,prop.r=FALSE,prop.t=FALSE,prop.chisq=FALSE, chisq=TRUE)
+```
 
 
+```{r chi_data}
 
+ct_chi <- c(round(as.numeric(ct_chi_fatal$chisq[3])),round(as.numeric(ct_chi_overturned$chisq[3]),10),round(as.numeric(ct_chi_cell$chisq[3]),10),round(as.numeric(ct_chi_speed$chisq[3]),10),round(as.numeric(ct_chi_aggressive$chisq[3]),10),round(as.numeric(ct_chi_1617$chisq[3]),10),round(as.numeric(ct_chi_65$chisq[3]),10))
+
+```
+
+```{r add_chi}
+table %>% mutate(
+  X.squared_p = ct_chi
+)
+```
+
+```{r continuous}
+pctbach_mean <- tapply(df$PCTBACHMOR,df$DRINKING_D,mean)
+pctbach_sd <- tapply(df$PCTBACHMOR,df$DRINKING_D,sd)
+medhh_mean <- tapply(df$MEDHHINC,df$DRINKING_D,mean)
+medhh_sd <- tapply(df$MEDHHINC,df$DRINKING_D,sd)
+```
+
+```{r continuous_table}
+
+continuous_vars = c("PCTBACHMOR","MEDHHINC")
+mean_no_drinking = c(round(pctbach_mean[1],2),round(medhh_mean[1],2))
+mean_drinking = c(round(pctbach_mean[2],2),round(medhh_mean[2],2))
+sd_no_drinking = c(round(pctbach_sd[1],2),round(medhh_sd[1],2))
+sd_drinking =  c(round(pctbach_sd[2],2),round(medhh_sd[2],2))
+
+table_continuous = data.frame(continuous_vars,mean_no_drinking,sd_no_drinking,mean_drinking,sd_drinking)
+
+print(table_continuous)
+```
+
+```{r ttest_continuous}
+t_pctbach <- t.test(df$PCTBACHMOR~df$DRINKING_D)
+t_medhh <- t.test(df$MEDHHINC~df$DRINKING_D)
+```
+
+```{r table_continuous_add}
+table_continuous = table_continuous %>% mutate(
+  ttest_pval = c(round(t_pctbach$p.value,3),round(t_medhh$p.value,3))
+)
+
+print(table_continuous)
+```
+I'd argue neither are significant.
+
+```{r corrplot}
+predictors <- df %>% select(-c(CRN,DRINKING_D,AREAKEY))
+
+ggcorrplot(
+  round(cor(predictors), 2),
+  p.mat = cor_pmat(predictors),
+  lab=T,
+  type="lower",
+  insig = "blank") +  
+    labs(title = "Correlation Matrix of Predictor Variables", tl.cex = 0.5, tl.col = "black")
+
+```
+
+Looks like there is some multicollinearity
+
+```{r logistic_mod}
+
+log_mod <- glm(DRINKING_D~FATAL_OR_M+OVERTURNED+CELL_PHONE+SPEEDING+AGGRESSIVE+DRIVER1617+DRIVER65PLUS+PCTBACHMOR+MEDHHINC,data=df,family="binomial")
+summary(log_mod)
+```
+
+```{r log_results}
+#Merging beta coefficients, odds ratios and 95% confidence intervals
+cbind (log_mod$coefficients,p=round(summary(log_mod)$coefficients[,4],5) ,exp(cbind(OR = coef(log_mod), confint(log_mod))))
+```
+
+```{r sens_spec}
+
+fitted = log_mod$fitted  
+
+cutoff_list = c()
+sensitivity_list = c()
+specificity_list = c()
+
+find_ss = function(cutoff_values) {
+  cutoff_list = c()
+  sensitivity_list = c()
+  specificity_list = c()
+    for(i in seq_along(cutoff_values)){ 
+      cutoff = cutoff_values[i]
+      fit.binary = (fitted>=cutoff)
+    ct_binary = CrossTable(fit.binary, df$DRINKING_D, prop.r=FALSE, prop.t=FALSE, prop.chisq=FALSE)
+    false_neg = ct_binary$t[,2][1]
+    true_pos = ct_binary$t[,2][2]
+    false_pos = ct_binary$t[,1][1]
+    true_neg = ct_binary$t[,1][2]
+
+    sensitivity = round(true_pos/(true_pos+false_neg),2)
+    specificity = round(true_neg/(true_neg+false_pos),2)
+  
+    sensitivity_list = c(sensitivity_list,sensitivity)
+    specificity_list = c(specificity_list,specificity)
+    cutoff_list = c(cutoff_list,cutoff)
+    }
+  
+  table = data.frame(cutoff=cutoff_list,sensitivity=sensitivity_list,specificity=specificity_list)
+  return(table)
+}
+
+
+cutoff_value = c(0.02,0.03,0.05,0.07,0.08,0.09,0.10,0.15,0.20,0.50)
+
+
+table_test = find_ss(cutoff_value)
+print(table_test)
+```
+```{r roc}
+a <- cbind(df$DRINKING_D, fitted)
+colnames(a) <- c("labels","predictions")
+roc <- as.data.frame(a)
+
+pred <- prediction(roc$predictions, roc$labels)
+roc.perf = performance(pred, measure = "tpr", x.measure="fpr")
+plot(roc.perf)
+abline(a=0,b=1)
+```
+
+```{r auc}
+auc.perf = performance(pred, measure ="auc")
+auc.perf@y.values
+```
+```{r logmod_2}
+log_mod2 <- glm(DRINKING_D~FATAL_OR_M+OVERTURNED+CELL_PHONE+SPEEDING+AGGRESSIVE+DRIVER1617+DRIVER65PLUS,data=df,family="binomial")
+summary(log_mod2)
+```
+```{r logmod2_results}
+cbind (log_mod2$coefficients,p=round(summary(log_mod2)$coefficients[,4],5) ,exp(cbind(OR = coef(log_mod2), confint(log_mod2))))
+```
+
+```{r aic_compare}
+AIC(log_mod, log_mod2)
+```
+
+The first one is better, but by so little.
