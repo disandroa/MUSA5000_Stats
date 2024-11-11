@@ -40,6 +40,7 @@ library(ggcorrplot)
 data <- read.csv("data/Logistic Regression Data.csv")
 ```
 
+# Exploratory Analysis
 
 
 ```{r tabulate_DV}
@@ -216,3 +217,130 @@ cor_plot <- ggcorrplot(cormat,
 cor_plot
 
 ```
+
+# Regression Analysis
+
+```{r log_mod}
+log_mod <- glm(DRINKING_D ~ FATAL_OR_M + OVERTURNED + CELL_PHONE + SPEEDING + AGGRESSIVE + DRIVER1617 + DRIVER65PLUS + PCTBACHMOR + MEDHHINC,
+               data = data, family="binomial")
+
+summary(log_mod)
+
+```
+
+```{r OR_95CI}
+# logit model coefficients
+logit_coefs_ps <- data.frame(Coefficient = round(summary(log_mod)$coefficients[,1], 3),
+                             `p-value` = round(summary(log_mod)$coefficients[,4], 3))
+
+# exponentiated OR and 95% CI
+OR_95CI <- exp(cbind(OR = round(coef(log_mod), 3), round(confint(log_mod), 3))) 
+
+logit_output <- cbind(logit_coefs_ps, OR_95CI)
+
+logit_output
+
+```
+
+
+```{r sens_spec_misclass}
+# create table for sensitivity, specificity, misclassification rate at each of the designated cut-off values
+cutoffs <- c(0.02, 0.03, 0.05, 0.07, 0.08, 0.09, 0.10, 0.15, 0.20, 0.50)
+
+fit <- log_mod$fitted
+
+get_sens_spec_misclass = function(fit, cutoff) {
+  
+  # binary vector of whether the fitted value met the threshold or not
+  fit_binary <- ifelse(fit >= cutoff, 1, 0)
+  
+  crosstab <- CrossTable(fit_binary, data$DRINKING_D, prop.r = F, prop.t = F, prop.chisq = F)
+  
+  # get sensitivity, specificity, misclassification rate from crosstab results
+  sens <- crosstab$prop.row[2,2]
+  spec <- crosstab$prop.row[1,1]
+  misclass <- (crosstab$t[1,2] + crosstab$t[2,1]) / length(fit)
+  
+  df_toreturn <- data.frame(`Cutoff Value` = cutoff,
+                            Sensitivity = sens,
+                            Specificity = spec,
+                            `Misclassification Rate` = misclass)
+  
+  return(df_toreturn)
+}
+
+# loop through cutoffs to get all necessary values
+for (cutoff in cutoffs) {
+  if (cutoff == 0.02) {
+    table4 <- get_sens_spec_misclass(fit, cutoff)
+  } else {
+    table4 <- rbind(table4, get_sens_spec_misclass(fit, cutoff))
+  }
+}
+
+table4
+
+# cutoff of 0.50 has the lowest misclassification rate
+
+```
+
+```{r ROC}
+roc <- data.frame(labels = data$DRINKING_D, 
+                  predictions = fit)
+
+pred <- prediction(roc$predictions, roc$labels)
+
+roc.perf <- performance(pred, measure = "tpr", x.measure = "fpr")
+
+plot(roc.perf)
+abline(a=0,b=1)
+
+
+```
+
+```{r opt_cutoff_roc}
+opt.cut = function(perf, pred) {
+  cut.ind = mapply(FUN = function(x, y, p){
+    d = (x - 0)^2 + (y-1)^2
+    ind = which(d == min(d))
+    c(sensitivity = y[[ind]], specificity = 1-x[[ind]],
+      cutoff = p[[ind]])
+    }, 
+    perf@x.values, perf@y.values, pred@cutoffs)
+}
+
+print(opt.cut(roc.perf, pred))
+
+```
+
+```{r AUC}
+auc.perf = performance(pred, measure ="auc")
+auc.perf@y.values
+```
+
+
+```{r second_log_mod}
+log_mod2 <- glm(DRINKING_D ~ FATAL_OR_M + OVERTURNED + CELL_PHONE + SPEEDING + AGGRESSIVE + DRIVER1617 + DRIVER65PLUS,
+               data = data, family="binomial")
+
+summary(log_mod2)
+```
+
+```{r OR_95CI_2}
+# logit model coefficients
+logit_coefs_ps2 <- data.frame(Coefficient = round(summary(log_mod2)$coefficients[,1], 3),
+                              `p-value` = round(summary(log_mod2)$coefficients[,4], 3))
+
+# exponentiated OR and 95% CI
+OR_95CI2 <- exp(cbind(OR = round(coef(log_mod2), 3), round(confint(log_mod2), 3))) 
+
+logit_output2 <- cbind(logit_coefs_ps2, OR_95CI2)
+
+logit_output2
+
+```
+
+```{r AIC_comparison}
+AIC(log_mod, log_mod2)
+```
+
