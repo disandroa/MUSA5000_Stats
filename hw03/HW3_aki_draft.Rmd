@@ -224,7 +224,7 @@ cor_plot
 log_mod <- glm(DRINKING_D ~ FATAL_OR_M + OVERTURNED + CELL_PHONE + SPEEDING + AGGRESSIVE + DRIVER1617 + DRIVER65PLUS + PCTBACHMOR + MEDHHINC,
                data = data, family="binomial")
 
-summary(log_mod)
+# summary(log_mod)
 
 ```
 
@@ -234,11 +234,21 @@ logit_coefs_ps <- data.frame(Coefficient = round(summary(log_mod)$coefficients[,
                              `p-value` = round(summary(log_mod)$coefficients[,4], 3))
 
 # exponentiated OR and 95% CI
-OR_95CI <- exp(cbind(OR = round(coef(log_mod), 3), round(confint(log_mod), 3))) 
+OR_95CI <- exp(cbind(OR = coef(log_mod), confint(log_mod))) 
 
-logit_output <- cbind(logit_coefs_ps, OR_95CI)
+logit_output <- cbind(logit_coefs_ps, OR_95CI) %>% 
+  mutate(`Odds Ratio` = round(OR, 3),
+         `2.5 %` = round(`2.5 %`, 3),
+         `97.5 %` = round(`97.5 %`, 3)) %>% 
+  rename(`p-value` = p.value) %>% 
+  relocate(`Odds Ratio`, .after = OR) %>% 
+  dplyr::select(-OR)
 
-logit_output
+logit_output %>% 
+  kbl(caption = "Table 4. Summary of First Logistic Model",
+      align = "lccccc") %>% 
+  kable_styling() %>%
+  kable_classic(full_width = F, html_font = "Cambria") 
 
 ```
 
@@ -257,8 +267,8 @@ get_sens_spec_misclass = function(fit, cutoff) {
   crosstab <- CrossTable(fit_binary, data$DRINKING_D, prop.r = F, prop.t = F, prop.chisq = F)
   
   # get sensitivity, specificity, misclassification rate from crosstab results
-  sens <- crosstab$prop.row[2,2]
-  spec <- crosstab$prop.row[1,1]
+  sens <- crosstab$prop.col[2,2]
+  spec <- crosstab$prop.col[1,1]
   misclass <- (crosstab$t[1,2] + crosstab$t[2,1]) / length(fit)
   
   df_toreturn <- data.frame(`Cutoff Value` = cutoff,
@@ -272,13 +282,22 @@ get_sens_spec_misclass = function(fit, cutoff) {
 # loop through cutoffs to get all necessary values
 for (cutoff in cutoffs) {
   if (cutoff == 0.02) {
-    table4 <- get_sens_spec_misclass(fit, cutoff)
+    table5 <- get_sens_spec_misclass(fit, cutoff)
   } else {
-    table4 <- rbind(table4, get_sens_spec_misclass(fit, cutoff))
+    table5 <- rbind(table5, get_sens_spec_misclass(fit, cutoff))
   }
 }
 
-table4
+table5 %>% 
+  mutate(Sensitivity = round(Sensitivity, 3),
+         Specificity = round(Specificity, 3),
+         Misclassification.Rate = round(Misclassification.Rate, 3)) %>% 
+  kbl(caption = "Table 5: Sensitivity, Specificity, and Misclassification Rate for First Logistic Model",
+      align = "c",
+      col.names = c("Cutoff", "Sensitivity", "Specificity", "Misclassification Rate")) %>% 
+  kable_styling() %>% 
+  kable_classic(full_width = F, html_font = "Cambria") %>% 
+  row_spec(row = 10, background = "#f5e77a")
 
 # cutoff of 0.50 has the lowest misclassification rate
 
@@ -323,7 +342,7 @@ auc.perf@y.values
 log_mod2 <- glm(DRINKING_D ~ FATAL_OR_M + OVERTURNED + CELL_PHONE + SPEEDING + AGGRESSIVE + DRIVER1617 + DRIVER65PLUS,
                data = data, family="binomial")
 
-summary(log_mod2)
+# summary(log_mod2)
 ```
 
 ```{r OR_95CI_2}
@@ -332,15 +351,32 @@ logit_coefs_ps2 <- data.frame(Coefficient = round(summary(log_mod2)$coefficients
                               `p-value` = round(summary(log_mod2)$coefficients[,4], 3))
 
 # exponentiated OR and 95% CI
-OR_95CI2 <- exp(cbind(OR = round(coef(log_mod2), 3), round(confint(log_mod2), 3))) 
+OR_95CI2 <- exp(cbind(OR = coef(log_mod2), confint(log_mod2))) 
 
-logit_output2 <- cbind(logit_coefs_ps2, OR_95CI2)
+logit_output2 <- cbind(logit_coefs_ps2, OR_95CI2) %>% 
+  mutate(`Odds Ratio` = round(OR, 3),
+         `2.5 %` = round(`2.5 %`, 3),
+         `97.5 %` = round(`97.5 %`, 3)) %>% 
+  rename(`p-value` = p.value) %>% 
+  relocate(`Odds Ratio`, .after = OR) %>% 
+  dplyr::select(-OR)
 
-logit_output2
+logit_output2 %>% 
+  kbl(caption = "Table 6. Summary of Second Logistic Model",
+      align = "lccccc") %>% 
+  kable_styling() %>%
+  kable_classic(full_width = F, html_font = "Cambria") 
 
 ```
 
 ```{r AIC_comparison}
-AIC(log_mod, log_mod2)
+aic_df <- AIC(log_mod, log_mod2) 
+row.names(aic_df) <- c("First Logit Model", "Second Logit Model (no continuous predictors)")
+
+aic_df %>% 
+  kbl(caption = "Table 7: AIC Comparison",
+      align = "c") %>% 
+  kable_styling() %>% 
+  kable_classic(full_width = F, html_font = "Cambria")
 ```
 
