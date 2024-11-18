@@ -48,7 +48,8 @@ prop.table(DRINKING_D.tab)
 
 
 ```{r generate_cross_table}
-fatal_CrossT <- CrossTable(mydata$FATAL_OR_M, mydata$DRINKING_D, prop.r=FALSE,prop.chisq=FALSE, chisq=FALSE,prop.t=FALSE)
+fatal_CrossT <- CrossTable(mydata$FATAL_OR_M, mydata$DRINKING_D, prop.r=FALSE,prop.chisq=FALSE, chisq=FALSE,prop.t=FALSE,
+                           cell.layout=TRUE)
 
 overturned_CrossT <- CrossTable(mydata$OVERTURNED, mydata$DRINKING_D,prop.r=FALSE,prop.chisq=FALSE, chisq=FALSE,prop.t=FALSE)
 
@@ -63,6 +64,137 @@ driver1617_CrossT <- CrossTable(mydata$DRIVER1617, mydata$DRINKING_D, prop.r=FAL
 driver65plus_CrossT <- CrossTable(mydata$DRIVER65PLUS, mydata$DRINKING_D, prop.r=FALSE,prop.chisq=FALSE, chisq=FALSE,prop.t=FALSE)
 
 ```
+
+
+```{r crosstable_table}
+crosstable1.df <- data.frame(var_name = c("FATAL_OR_M: Crash resulted in fatality or major injury",
+                                           "OVERTURNED: Crash involved an overturned vehicle",
+                                           "CELL_PHONE: Driver was using cell phone",
+                                           "SPEEDING: Crash involved speeding car",
+                                           "AGGRESSIVE: Crash involved aggressive driving",
+                                           "DRIVER1617: Crash involved at least one driver who was 16 or 17 years old",
+                                           "DRIVER65PLUS: Crash involved at least one driver who was at least 65 years old"
+                                           ),
+                             no_drinkN = c(fatal_CrossT[["t"]][,1][2],
+                             overturned_CrossT[["t"]][,1][2], cell_phone_CrossT[["t"]][,1][2],speeding_CrossT[["t"]][,1][2], 
+                             aggressive_CrossT[["t"]][,1][2], driver1617_CrossT[["t"]][,1][2],driver65plus_CrossT[["t"]][,1][2]
+                             ),
+                             no_drinkProp = c(fatal_CrossT[["prop.col"]][,1][2],
+                             overturned_CrossT[["prop.col"]][,1][2], cell_phone_CrossT[["prop.col"]][,1][2],
+                             speeding_CrossT[["prop.col"]][,1][2], 
+                             aggressive_CrossT[["prop.col"]][,1][2],
+                             driver1617_CrossT[["prop.col"]][,1][2],driver65plus_CrossT[["prop.col"]][,1][2]),
+                             y_drinkN = c(fatal_CrossT[["t"]][,2][2],
+                             overturned_CrossT[["t"]][,2][2], cell_phone_CrossT[["t"]][,2][2],speeding_CrossT[["t"]][,2][2], 
+                             aggressive_CrossT[["t"]][,2][2], driver1617_CrossT[["t"]][,2][2],driver65plus_CrossT[["t"]][,2][2]
+                             ),
+                             y_drinkProp = c(fatal_CrossT[["prop.col"]][,2][2],
+                             overturned_CrossT[["prop.col"]][,2][2], cell_phone_CrossT[["prop.col"]][,2][2],
+                             speeding_CrossT[["prop.col"]][,2][2], 
+                             aggressive_CrossT[["prop.col"]][,2][2],
+                             driver1617_CrossT[["prop.col"]][,2][2],driver65plus_CrossT[["prop.col"]][,2][2]),
+                             total = c(fatal_CrossT[["t"]][,2][2]+fatal_CrossT[["t"]][,1][2],
+                                        overturned_CrossT[["t"]][,2][2]+overturned_CrossT[["t"]][,1][2],
+                                        cell_phone_CrossT[["t"]][,2][2]+cell_phone_CrossT[["t"]][,1][2],
+                                        speeding_CrossT[["t"]][,2][2]+speeding_CrossT[["t"]][,1][2],
+                                        aggressive_CrossT[["t"]][,2][2]+aggressive_CrossT[["t"]][,1][2],
+                                        driver1617_CrossT[["t"]][,2][2]+driver1617_CrossT[["t"]][,1][2],
+                                        driver65plus_CrossT[["t"]][,2][2]+driver65plus_CrossT[["t"]][,1][2]))
+
+kbl(crosstable1.df) %>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+```
+
+```{r crosstable_chisq}
+chisqfatal_CrossT <- CrossTable(mydata$FATAL_OR_M, mydata$DRINKING_D, prop.r=FALSE,prop.chisq=FALSE, chisq=TRUE,prop.t=FALSE)
+
+chisqoverturned_CrossT <- CrossTable(mydata$OVERTURNED, mydata$DRINKING_D,prop.r=FALSE,prop.chisq=FALSE, chisq=TRUE,prop.t=FALSE)
+
+chisqcell_phone_CrossT <- CrossTable(mydata$CELL_PHONE, mydata$DRINKING_D, prop.r=FALSE,prop.chisq=FALSE, chisq=TRUE,prop.t=FALSE)
+
+chisqspeeding_CrossT <- CrossTable(mydata$SPEEDING, mydata$DRINKING_D, prop.r=FALSE,prop.chisq=FALSE, chisq=TRUE,prop.t=FALSE)
+
+chisqaggressive_CrossT <- CrossTable(mydata$AGGRESSIVE, mydata$DRINKING_D,prop.r=FALSE,prop.chisq=FALSE, chisq=TRUE,prop.t=FALSE)
+
+chisqdriver1617_CrossT <- CrossTable(mydata$DRIVER1617, mydata$DRINKING_D, prop.r=FALSE,prop.chisq=FALSE, chisq=TRUE,prop.t=FALSE)
+
+chisqdriver65plus_CrossT <- CrossTable(mydata$DRIVER65PLUS, mydata$DRINKING_D, prop.r=FALSE,prop.chisq=TRUE, chisq=TRUE,prop.t=FALSE)
+
+```
+
+chisqfatal_CrossT[["chisq"]][["p.value"]]
+
+```{r addchisq}
+crosstable1.df %>% mutate(
+  chisq.pval = c(chisqfatal_CrossT[["chisq"]][["p.value"]],
+                 chisqoverturned_CrossT[["chisq"]][["p.value"]],
+                 chisqcell_phone_CrossT[["chisq"]][["p.value"]],
+                 chisqspeeding_CrossT[["chisq"]][["p.value"]],
+                 chisqaggressive_CrossT[["chisq"]][["p.value"]],
+                 chisqdriver1617_CrossT[["chisq"]][["p.value"]],
+                 chisqdriver65plus_CrossT[["chisq"]][["p.value"]]))
+
+kbl(crosstable1.df) %>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+```
+
+
+```{r continuous_var_tables}
+tapply(mydata$PCTBACHMOR,
+mydata$DRINKING_D, mean)
+
+tapply(mydata$PCTBACHMOR, mydata$DRINKING_D, sd)
+
+tapply(mydata$MEDHHINC,
+mydata$DRINKING_D, mean)
+
+tapply(mydata$MEDHHINC, mydata$DRINKING_D, sd)
+```
+
+```{r t_test_bach}
+t.test(mydata$PCTBACHMOR~mydata$DRINKING_D)
+```
+
+```{r t_test_hhinc}
+t.test(mydata$MEDHHINC~mydata$DRINKING_D)
+```
+```{r corrmat}
+cormat <- mydata %>% 
+  dplyr::select(FATAL_OR_M:DRIVER65PLUS,PCTBACHMOR,MEDHHINC) %>% 
+  cor()
+
+cor_plot <- ggcorrplot(cormat,
+                       method = "circle",
+                       type = "lower",
+                       lab = TRUE,
+                       lab_size = 3,
+                       colors = c("#451077FF", "white", "#F1605DFF"),
+                       outline.color = "white",
+                       title = "Correlation Matrix of Predictors",
+                       legend.title = "Correlation") +
+  theme_minimal() +  
+  labs(x = "",
+       y = "") +
+  theme(axis.text.x = element_text(angle = 20))
+
+cor_plot
+
+```
+
+
+```{r run_model}
+mylogit <- glm(DRINKING_D ~ FATAL_OR_M+OVERTURNED+CELL_PHONE+SPEEDING+AGGRESSIVE+DRIVER1617+
+                 DRIVER65PLUS+PCTBACHMOR+MEDHHINC, data = mydata, family = "binomial")
+
+summary(mylogit)
+```
+
+```{r odds_ratio}
+confint.default(mylogit)  #95% confidence intervals
+exp(cbind(OR = coef(mylogit), confint(mylogit)))
+```
+
+
 
 
 
