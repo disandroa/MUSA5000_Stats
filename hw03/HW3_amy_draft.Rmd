@@ -32,6 +32,7 @@ library(ROCR)
 library(xtable)
 library(kableExtra)
 library(ggcorrplot)
+library(stargazer)
 
 ```
 
@@ -190,9 +191,111 @@ summary(mylogit)
 ```
 
 ```{r odds_ratio}
+logit_output <- summary(mylogit)
+logitcoeffs <- logit_output$coefficients
 confint.default(mylogit)  #95% confidence intervals
-exp(cbind(OR = coef(mylogit), confint(mylogit)))
+or_ci <- exp(cbind(OR = coef(mylogit), confint(mylogit)))
 ```
+
+
+```{r logit_coefficients}
+final_logit <- cbind(logitcoeffs, or_ci)
+final_logit
+```
+
+```{r sens_spec}
+fitted = mylogit$fitted  
+
+cutoff_list = c()
+sensitivity_list = c()
+specificity_list = c()
+misclassification_list = c()
+
+find_ss = function(cutoff_values) {
+  cutoff_list = c()
+  sensitivity_list = c()
+  specificity_list = c()
+    for(i in seq_along(cutoff_values)){ 
+      cutoff = cutoff_values[i]
+      fit.binary = (fitted>=cutoff)
+    ct_binary = CrossTable(fit.binary, mydata$DRINKING_D, prop.r=FALSE, prop.t=FALSE, prop.chisq=FALSE)
+    false_neg = ct_binary$t[,2][1]
+    true_pos = ct_binary$t[,2][2]
+    false_pos = ct_binary$t[,1][1]
+    true_neg = ct_binary$t[,1][2]
+
+    sensitivity = round(true_pos/(true_pos+false_neg),2)
+    specificity = round(true_neg/(true_neg+false_pos),2)
+    misclassification = round((false_pos + false_neg)/(false_pos + false_neg + true_pos + true_neg),2)
+  
+    sensitivity_list = c(sensitivity_list,sensitivity)
+    specificity_list = c(specificity_list,specificity)
+    misclassification_list = c(misclassification_list, misclassification)
+    cutoff_list = c(cutoff_list,cutoff)
+    }
+  
+  table = data.frame(cutoff=cutoff_list,sensitivity=sensitivity_list,specificity=specificity_list,
+                     misclassification=misclassification_list)
+  return(table)
+}
+
+
+cutoff_value = c(0.02,0.03,0.05,0.07,0.08,0.09,0.10,0.15,0.20,0.50)
+
+
+table_test = find_ss(cutoff_value)
+print(table_test)
+```
+
+```{r ROC}
+fit <- mylogit$fitted 
+a <- cbind(mydata$DRINKING_D, fit)
+
+colnames(a) <- c("labels","predictions")
+roc <- as.data.frame(a)
+
+pred <- prediction(roc$predictions, roc$labels)
+
+roc.perf = performance(pred, measure = "tpr", x.measure="fpr")
+plot(roc.perf)
+abline(a=0,b=1, col="darkorange3")
+```
+
+
+```{r auc_calc}
+auc.perf = performance(pred, measure ="auc")
+auc.perf@y.values
+
+```
+
+
+```{r run_model2}
+mylogit2 <- glm(DRINKING_D ~ FATAL_OR_M+OVERTURNED+CELL_PHONE+SPEEDING+AGGRESSIVE+DRIVER1617+
+                 DRIVER65PLUS, data = mydata, family = "binomial")
+
+summary(mylogit2)
+```
+
+```{r odds_ratio2}
+logit_output2 <- summary(mylogit2)
+logitcoeffs2 <- logit_output2$coefficients
+confint.default(mylogit2)  #95% confidence intervals
+or_ci2 <- exp(cbind(OR = coef(mylogit2), confint(mylogit2)))
+```
+
+
+```{r logit_coefficients}
+final_logit2 <- cbind(logitcoeffs2, or_ci2)
+final_logit2
+```
+
+```{r}
+stargazer(mylogit, mylogit2, type="text")
+```
+
+
+
+
 
 
 
