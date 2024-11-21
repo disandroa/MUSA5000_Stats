@@ -1,0 +1,277 @@
+---
+title: "Examining Predictors of Car Crashes Caused by Alcohol Using Logistic Regression"
+author: "Akira Di Sandro, Sofia Fasullo, Amy Solano"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    toc: true
+  extra_dependencies: ['amsmath', 'mathtools']
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, eval = T, warning = F, message = F)
+
+# get rid of scientific notation
+options(scipen = 999)
+
+# set working directory
+# setwd("~/Library/Mobile Documents/com~apple~CloudDocs/Documents/MUSA/Fall24/MUSA5000_Stats/MUSA5000_Stats/hw03")
+setwd("~/Documents/GitHub/MUSA5000_Stats/hw03")
+
+# load packages
+library(tidyverse)
+library(aod)
+library(ggplot2)
+library(rms)
+library(gmodels)
+library(nnet)
+library(DAAG)
+library(ROCR)
+library(xtable)
+library(kableExtra)
+library(ggcorrplot)
+library(stargazer)
+
+#load_data
+data <- read.csv("data/Logistic Regression Data.csv")
+```
+
+## Introduction
+
+In this report, we seek to identify predictors of crashes related to drunk driving in the City of Philadelphia. Drunk driving is a nationwide issue with severe consequences, taking the lives of more than 35 people per day and injuring many more, according to the [National Highway Traffic Safety Administration](https://www.nhtsa.gov/risky-driving/drunk-driving). Alcohol-impaired crashes also present a large financial burden; the NHTSA estimates that these crashes cost the United States more than \$68 billion annually. 
+
+To explore this issue and the potential predictors in Philadelphia, we will use a dataset that contains information about the crashes that occured in Philadelphia in the years 2008-2012, including their geographic locations. Though 53,260 crashes occured in this time period, we did not include crashes that took place in non-residential block groups. This leaves us with 43,364 crashes. Our data are merged with census block group data to feature PCTBACHMOR and MEDHHINC for a block group, both of which were used as predictors in our previous reports. Predictors from the crash data are FATAL\_OR\_M, OVERTURNED, CELL\_PHONE, SPEEDING, AGGRESSIVE, DRIVER1617, DRIVER65PLUS. We will regress the binary dependent variable DRINKING\_D on these predictors using logistic regression in R. 
+
+## Methods
+
+A binary variable takes on the value of either 1 or 0, with no other options. OLS regression measures the correlation relationships between predictor variables and the dependent variable (Y), with each predictor either causing Y to increase or decrease. However, a binary variable does not increase or decrease continuously, so it cannot be interpreted this way. Predicting the probability of a binary variable taking a value of 1, P(Y=1), makes more sense and creates a dependent variable that does increase continuously, however it is bounded by [0,1] and OLS models do not make sense for bounded variables. In OLS, a predictor that is positively correlated with the dependent variable would always make it increase, and that does not make sense for a probability over 1, say.
+
+**Odds** are the probabilities that an event occurs over the probability it does not. The formula for the odds is: 
+$$
+\text{Odds} = {\frac{P}{1 - P}}
+$$
+This is also called the **Odds Ratio (OR)**. It differs from the probability of an event because that is calculated by the number of times the event occurs over the total number of times it occurs and doesn’t occur. Odds are times it occurs over times it doesn't. 
+
+OR is easy to interpret. OR = 1 means the event is equally likely to occur or not occur, OR > 1 means it’s more likely to occur and OR < 1 means it’s more likely not to occur. Taking the log of the OR creates the perfect translator function for a continuous value between 1 and 0 : P(Y=1), in our case. This is the **logistic function**. The formulas for the logistic function can be shown below, with the variables specific to this analysis:
+
+\begin{multline*}
+ln\left(\frac{p}{1-p}\right) = \beta_0 + \beta_1\text{FATAL\_OR\_M} + \beta_2\text{OVERTURNED} + \beta_3\text{CELL\_PHONE}+ \beta_4\text{SPEEDING}  \\
++\beta_5\text{AGGRESSIVE}
++  \beta_6\text{DRIVER1617}+ \beta_7\text{DRIVER65PLUS}+ \beta_8\text{PCTBACHMOR}+ \beta_9\text{MEDHHINC}
+\end{multline*}
+
+
+
+
+$$
+p = P(Y = 1) =
+\frac{1}{
+    \begin{aligned}
+    &1 + e^{-\beta_0 - \beta_1\text{FATAL\_OR\_M} - \beta_2\text{OVERTURNED} - \beta_3\text{CELL\_PHONE} - \beta_4\text{SPEEDING}} \\
+    &\quad ^{-\beta_5\text{AGGRESSIVE} - \beta_6\text{DRIVER1617} - \beta_7\text{DRIVER65PLUS} -\beta_8\text{PCTBACHMOR} -\beta_9\text{MEDHHINC}}
+    \end{aligned}
+}
+$$
+
+
+
+
+- $p = P(Y=1)$ is the probability that the predictor variable is 1, in our case, the probability $\text{DRINKING\_D}=1$, or the accident was due to drunk driving
+- $\beta_0$ is the baseline log-odds of $Y=1$ when all other predictors are 0
+- $\beta_n$ demonstrates the relationship between the nth predictor and $p$ such that as the nth predictor increases by 1, $p$ -increases by $(e^{\beta_n}-1)*100%$
+
+
+The logistic function is continuous and bounded by 0 and 1, which is perfect to predict $p$, the probability that Y=1. In addition, the logistic function is symmetrical which displays the inverse relationship between $P(Y=1)$ and $P(Y\ne1)$, which is the base of the odds ratio.
+
+For each predictor, the hypothesis test essentially sees whether that predictor has any effect on the probability of Y=1. The null hypothesis is $H_0 : \beta_0 = 0$ which is equivalent to saying $\text{OR}=1$. This means that changing a certain predictor does not make a difference to the probability of Y=1. The alternative hypothesis is that  $H_a : \beta_0 \ne 0$, or that $\text{OR} \ne 1$. This means that the predictor does have an effect on the probability that Y=1.
+
+The equation for the Wald statistic is as follows: 
+$$
+W = \frac{\beta^2}{Var(\beta)}
+$$
+This statistic has a $\chi^2$ distribution with one degree of freedom, which can be used to test the hypothesis described above of whether a particular predictor has a result on the odds of the dependent variable.
+
+Rather than looking at the estimated $\beta$ coefficients, most statisticians prefer to look at odds ratios, which are calculated by exponentiating the coefficients.
+
+In OLS regression, the R-squared value measures the proportion of variance in the dependent variable Y that is explained by the independent variables in the model. However, this measure is not particularly meaningful for logistic regression because logistic regression models the probability that a binary dependent variable takes on a value of, rather than modeling the variance of Y. As a result, the concept of variance in Y does not translate directly in the context of logistic regression, making the traditional R-squared less useful as an indicator of goodness of fit.
+
+The **Aikaike Information Criterion (AIC)** is a measure of the goodness of fit of a model that takes into account log-likelihood of the model as well as the number of parameters in order to balance overfitting. The formula for AIC is as follows:
+$$
+\text{AIC} = 2k-2\ln(L)
+$$
+Where $k$ is the number of independent variables in the model, and $L$ is the likelihood of the model, which is the probability of observing the given set of $Y=y_1,y_2,...,y_n$ variables in the sample. A low AIC value demonstrates a well-fitting model because the log likelihood of the observed Y values is high in comparison to the number of predictor variables used.
+
+A binary variable takes on a value of 1 or of 0. In logistic regression, we predict the probability that Y takes on a value of 1 given a set of predictor variables. This probability does not give any certain answers, but provides a guideline for the prediction of Y, denoted by $\hat{y}$. Using the information provided by the model, we choose a **cutoff value** which specifies at which probability we will start predicting $\hat{y}=1$. For example, with a cutoff value of 0.5, an observation that yields P(Y=1) = 0.4 with our model will lead us to predict that $\hat{y}=0$ at that point, and an observation that yields P(Y=1) = 0.7 with our model will lead us to predict that $\hat{y}=1$ at that point. 
+
+**Sensitivity** is the rate at which true Y=1 points are correctly predicted by the model at a given cutoff rate. A **Type II Error** refers to the rate that a prediction that $\hat{y}=0$ is incorrect (so Y=1). These are called false negatives. So higher sensitivity relates to lower type II error.
+$$
+\text{Sensitivity} =\frac{ \text{true positive predictions}}{\text{true positive predictions}+\text{false negative predictions}}
+$$
+**Specificity** is the rate at which true Y=0 points are correctly predicted by the model at a cutoff rate. A **Type I Error** refers to the rate that a prediction that $\hat{y}=1$ is incorrect (so Y=0). These are called false positives. So higher sensitivity relates to lower type I error. 
+$$
+\text{Sensitivity} =\frac{ \text{true negative predictions}}{\text{true negative predictions}+\text{false positive predictions}}
+$$
+
+P(Y=1) will have a specific distribution for every model. Depending on what we chose for our cutoff rate to say when $\hat{y}=1$, we may predict more $\hat{y}=1$ than $\hat{y}=0$ or vice versa. If P(Y=1) falls mostly below 0.4 and we choose to call 0.7 a “high” P(Y=1) and thus our cutoff value, it can be assumed that very few observations will be predicted as $\hat{y}=1$. As a result, the sensitivity and specificity values will change.
+Sensitivity and specificity are inversely related. If every observation is predicted as $\hat{y}=1$, there will be a 0% specificity and perfect 100% sensitivity. The inverse is true if every value is predicted as $\hat{y}=0$. Typically, we want a model that balances sensitivity and specificity.
+As a result, it is important that we test the sensitivity and specificity rates for multiple cutoff values, and choose an optimal value.
+The **misclassification rate** is the rate of type I error + type II error. In other words, it is the rate at which any values of Y are predicted incorrectly. For this report, we are evaluating which cutoff rate creates the lowest square of the misclassification rate. Thus, we are balancing sensitivity and specificity.
+
+The ROC curve visualizes the sensitivity rate against the specificity rate at every cutoff value of P(Y=1), from 0 to 1. The higher the curve reaches, the greater sensitivity and specificity the model can reach.
+
+Beyond just visually inspecting the ROC curve graph, we can calculate the area under the ROC curve (abbreviated AUC). The higher the AUC value, the higher the curve and thus sensitivity and specificity values the model can balance. A rough guide for the AUC values and model goodness of fit are as follows:
+- 0.90-1 = excellent
+- 0.80-0.90 = good
+- 0.70-0.80 = fair
+- 0.60-0.70 = poor
+- 0.50-0.60 = fail
+
+Some assumptions of OLS regression hold for logistic regression:
+- Independence of observations
+- No severe multicollinearity
+
+Some assumptions of OLS do not hold for logistic regression:
+- Linear relationship between dependent variable and predictors: in logistic regression, the dependent variable is binary so this does not hold
+- Normality of residuals: because of the bounded and non-linear nature of the logistic function, error terms cannot be normal
+- Sample sizes do not have to be as large for OLS as they do for logistic regression, because we need a set of observations where both Y=1 and Y=0.
+
+Before engaging in predictive modeling, we perform exploratory analysis to see whether there are relationships between certain variables we may use as predictors and the dependent variable. Cross-tabulation is the process of comparing all variables of interest with dependent variable and with each other (to assess collinearity). This looks slightly different from correlation cross-tabulations in OLS regression, because the dependent variable in this case is binary. 
+
+In one case, both the dependent and predictor variables may be binary. Statisticians frequently employ the **Chi-Square** ($\chi^2$) test to examine whether the distribution of one binary variable depends on another. For example, consider the relationship between the variables DRINKING\_D and FATAL\_OR\_M. The null and alternative hypotheses for the $\chi^2$ test would be:
+- $H_0$ (Null Hypothesis): The proportion of fatalities in crashes involving drunk drivers is the same as the proportion in crashes without drunk drivers.
+- $H_a$ (Alternative Hypothesis): The proportion of fatalities in crashes involving drunk drivers differs from the proportion in crashes without drunk drivers.
+
+A large $\chi^2$ statistic, combined with a p-value below 0.05, provides evidence to reject the null hypothesis in favor of the alternative. This would indicate an association between drunk driving and crash fatalities.
+
+We can also observe the relationships between continuous predictor variables and a binary dependent variable by comparing the means of continuous predictors for both values of the dependent variable.
+
+As used in introductory statistics, comparing the mean of a continuous variable across two independent groups typically involves using the independent samples t-test. For instance, we can determine whether the average PCTBACHMOR values differ significantly between crashes involving drunk drivers and those that do not. The null and alternative hypotheses for this test are as follows:
+- $H_0$ (Null Hypothesis): The average PCTBACHMOR values are the same for crashes involving drunk drivers and those that do not.
+- $H_a$ (Alternative Hypothesis): The average PCTBACHMOR values differ for crashes involving drunk drivers compared to those that do not.
+
+
+## Results
+
+```{r tabulate_DV, echo=F}
+DRINKING_D.table <- table(data$DRINKING_D)
+#     0     1 
+# 40879  2485
+
+DRINKING_D.proptable <- prop.table(DRINKING_D.table)
+
+# kable for DRINKING_D.proptable
+data.frame(DRINKING_D.proptable) %>% 
+  mutate(`Drunk Driver Involved?` = ifelse(Var1 == 0, "No", "Yes"),
+         `Drunk Driver Involved?` = factor(`Drunk Driver Involved?`, levels = c("Yes", "No")),
+         Proportion = round(Freq, 3)) %>% 
+  arrange(`Drunk Driver Involved?`) %>% 
+  dplyr::select(`Drunk Driver Involved?`, Proportion) %>% 
+  kbl(caption = "Table 1. Proportion of Crashes that involved a Drunk Driver",
+      align = "cc") %>% 
+  kable_styling() %>%
+  kable_classic(full_width = F, html_font = "Cambria", latex_options = "HOLD_position")
+```
+
+According to Table 1, we see that 2,485 out of 43,364, or 5.7% of crashes involved drunk driving.
+
+```{r crossTable_setup, results='hide', results='hide', echo=F}
+# TODO: still need to find a way to hide this output
+drinking_fatal <- CrossTable(data$DRINKING_D, data$FATAL_OR_M, 
+                             prop.r = F, prop.chisq = F, chisq = T, prop.t = F)
+
+drinking_overturned <- CrossTable(data$DRINKING_D, data$OVERTURNED, 
+                                  prop.r = F, prop.chisq = F, chisq = T, prop.t = F)
+
+drinking_cell <- CrossTable(data$DRINKING_D, data$CELL_PHONE, 
+                            prop.r = F, prop.chisq = F, chisq = T, prop.t = F)
+
+drinking_speed <- CrossTable(data$DRINKING_D, data$SPEEDING, 
+                             prop.r = F, prop.chisq = F, chisq = T, prop.t = F)
+
+drinking_aggr <- CrossTable(data$DRINKING_D, data$AGGRESSIVE, 
+                            prop.r = F, prop.chisq = F, chisq = T, prop.t = F)
+
+drinking_driver1617 <- CrossTable(data$DRINKING_D, data$DRIVER1617, 
+                                  prop.r = F, prop.chisq = F, chisq = T, prop.t = F)
+
+drinking_driver65plus <- CrossTable(data$DRINKING_D, data$DRIVER65PLUS, 
+                                    prop.r = F, prop.chisq = F, chisq = T, prop.t = F)
+
+
+```
+
+
+```{r crossTable, echo=F}
+# kable of all crosstables
+crossTable <- data.frame(
+  IV = c("FATAL_OR_M: Crash resulted in fatality or major injury",
+         "OVERTURNED: Involved an overturned vehicle",
+         "CELL_PHONE: Driver was using cell phone",
+         "SPEEDING: Involved speeding car",
+         "AGGRESSIVE: Involved aggressive driving",
+         "DRIVER1617: At least one driver was 16 or 17 years old",
+         "DRIVER65PLUS: At least one driver who was 65 years or older"),
+  no_alc_N = c(drinking_fatal$t[1,2],
+               drinking_overturned$t[1,2],
+               drinking_cell$t[1,2],
+               drinking_speed$t[1,2],
+               drinking_aggr$t[1,2],
+               drinking_driver1617$t[1,2],
+               drinking_driver65plus$t[1,2]),
+  no_alc_perc= c(paste0(round(drinking_fatal$prop.row[1,2]*100, 2), "%"),
+                 paste0(round(drinking_overturned$prop.row[1,2]*100, 2), "%"),
+                 paste0(round(drinking_cell$prop.row[1,2]*100, 2), "%"),
+                 paste0(round(drinking_speed$prop.row[1,2]*100, 2), "%"),
+                 paste0(round(drinking_aggr$prop.row[1,2]*100, 2), "%"),
+                 paste0(round(drinking_driver1617$prop.row[1,2]*100, 2), "%"),
+                 paste0(round(drinking_driver65plus$prop.row[1,2]*100, 2), "%")),
+  alc_N = c(drinking_fatal$t[2,2],
+            drinking_overturned$t[2,2],
+            drinking_cell$t[2,2],
+            drinking_speed$t[2,2],
+            drinking_aggr$t[2,2],
+            drinking_driver1617$t[2,2],
+            drinking_driver65plus$t[2,2]),
+  alc_perc= c(paste0(round(drinking_fatal$prop.row[2,2]*100, 2), "%"),
+              paste0(round(drinking_overturned$prop.row[2,2]*100, 2), "%"),
+              paste0(round(drinking_cell$prop.row[2,2]*100, 2), "%"),
+              paste0(round(drinking_speed$prop.row[2,2]*100, 2), "%"),
+              paste0(round(drinking_aggr$prop.row[2,2]*100, 2), "%"),
+              paste0(round(drinking_driver1617$prop.row[2,2]*100, 2), "%"),
+              paste0(round(drinking_driver65plus$prop.row[2,2]*100, 2), "%")),
+  total = c(sum(drinking_fatal$t[,2]),
+            sum(drinking_overturned$t[,2]),
+            sum(drinking_cell$t[,2]),
+            sum(drinking_speed$t[,2]),
+            sum(drinking_aggr$t[,2]),
+            sum(drinking_driver1617$t[,2]),
+            sum(drinking_driver65plus$t[,2])),
+  chi_p = c(round(drinking_fatal$chisq$p.value,3),
+            round(drinking_overturned$chisq$p.value,3),
+            round(drinking_cell$chisq$p.value,3),
+            round(drinking_speed$chisq$p.value,3),
+            round(drinking_aggr$chisq$p.value,3),
+            round(drinking_driver1617$chisq$p.value,3),
+            round(drinking_driver65plus$chisq$p.value,3))
+)
+
+crossTable %>% 
+  kbl(caption = "Table 2. Cross-Tabulation of DV and Binary Predictors",
+      align = "lcccccc",
+      col.names = c("", rep(c("N", "%"), 2), "N", "$\\chi^2$ p-value")) %>% 
+  add_header_above(
+    header = c(" " = 1, "No Alcohol Involved\n(DRINKING_D = 0)" = 2, "Alcohol Involved\n(DRINKING_D = 1)" = 2, "Total" = 1, " " = 1),
+    align = "c") %>% 
+  kable_styling() %>%
+  kable_classic(full_width = F, html_font = "Cambria", latex_options = "HOLD_position") 
+
+```
+
+
+
+
+AMY REMEMBER results='asis'
