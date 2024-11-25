@@ -113,7 +113,6 @@ sd_drinking =  c(round(pctbach_sd[2],2),round(medhh_sd[2],2))
 
 table_continuous = data.frame(continuous_vars,mean_no_drinking,sd_no_drinking,mean_drinking,sd_drinking)
 
-print(table_continuous)
 ```
 
 ```{r ttest_continuous}
@@ -130,18 +129,29 @@ print(table_continuous)
 ```
 I'd argue neither are significant.
 
+
 ```{r corrplot}
-predictors <- df %>% select(-c(CRN,DRINKING_D,AREAKEY))
+cormat <- df %>%
+  dplyr::select(-c(CRN,DRINKING_D,AREAKEY,COLLISION_)) %>% 
+  cor()
 
-ggcorrplot(
-  round(cor(predictors), 2),
-  p.mat = cor_pmat(predictors),
-  lab=T,
-  type="lower",
-  insig = "blank") +  
-    labs(title = "Correlation Matrix of Predictor Variables", tl.cex = 0.5, tl.col = "black")
+cor_plot <- ggcorrplot(cormat,
+                       method = "circle",
+                       type = "lower",
+                       lab = TRUE,
+                       lab_size = 3,
+                       colors = c("#451077FF", "white", "#F1605DFF"),
+                       outline.color = "white",
+                       title = "Correlation Matrix of Predictors",
+                       legend.title = "Correlation") +
+  theme_minimal() +  
+  labs(x = "",
+       y = "") +
+  theme(axis.text.x = element_text(angle = 20))
 
+cor_plot
 ```
+
 
 Looks like there is some multicollinearity
 
@@ -156,6 +166,18 @@ summary(log_mod)
 cbind (log_mod$coefficients,p=round(summary(log_mod)$coefficients[,4],5) ,exp(cbind(OR = coef(log_mod), confint(log_mod))))
 ```
 
+$$
+
+\ln\left(\frac{P}{1-P}\right) = \beta_0 + \beta_1\text{FATAL_OR_M} + \beta_2\text{OVERTURNED} + \beta_3\text{CELL_PHONE}+ \beta_4\text{SPEEDING}+ \beta_5\text{AGGRESSIVE}+ \beta_6\text{DRIVER1617}+ \beta_7\text{DRIVER65PLUS}+ \beta_8\text{PCTBACHMORE}+\beta_9\text{MEDHHINC}
+\newline
+p = P(Y = 1) = \frac{1}{1 + e^{-\beta_0 - \beta_1\text{FATAL_OR_M} - \beta_2\text{OVERTURNED} - \beta_3\text{CELL_PHONE} - \beta_4\text{SPEEDING} - \beta_5\text{AGGRESSIVE} - \beta_6\text{DRIVER1617} - \beta_7\text{DRIVER65PLUS} - \beta_8\text{PCTBACHMORE} - \beta_9\text{MEDHHINC}}}
+$$
+$p = P(Y=1)$ is the probability that the predictor variable is 1, in our case, the probability $\text{DRINKING_D}=1$, or the accident was due to drunk driving
+$\beta_n$ demonstrates the relationship between the nth predictor and $p$ such that as the nth predictor increases by 1, $p$ increases by $(e^{\beta_n}-1)*100%$
+
+
+
+
 ```{r sens_spec}
 
 fitted = log_mod$fitted  
@@ -168,24 +190,28 @@ find_ss = function(cutoff_values) {
   cutoff_list = c()
   sensitivity_list = c()
   specificity_list = c()
+  misclass_list = c()
     for(i in seq_along(cutoff_values)){ 
       cutoff = cutoff_values[i]
       fit.binary = (fitted>=cutoff)
     ct_binary = CrossTable(fit.binary, df$DRINKING_D, prop.r=FALSE, prop.t=FALSE, prop.chisq=FALSE)
     false_neg = ct_binary$t[,2][1]
     true_pos = ct_binary$t[,2][2]
-    false_pos = ct_binary$t[,1][1]
-    true_neg = ct_binary$t[,1][2]
+    false_pos = ct_binary$t[,1][2]
+    true_neg = ct_binary$t[,1][1]
 
-    sensitivity = round(true_pos/(true_pos+false_neg),2)
-    specificity = round(true_neg/(true_neg+false_pos),2)
+    sensitivity = round(true_pos/(true_pos+false_neg),3)
+    specificity = round(true_neg/(true_neg+false_pos),3)
+    
+    misclass = (false_neg+false_pos)/length(fitted)
   
     sensitivity_list = c(sensitivity_list,sensitivity)
     specificity_list = c(specificity_list,specificity)
     cutoff_list = c(cutoff_list,cutoff)
+    misclass_list = c(misclass_list,misclass)
     }
   
-  table = data.frame(cutoff=cutoff_list,sensitivity=sensitivity_list,specificity=specificity_list)
+  table = data.frame(cutoff=cutoff_list,sensitivity=sensitivity_list,specificity=specificity_list,misclassification_rate = misclass_list)
   return(table)
 }
 
@@ -206,6 +232,20 @@ roc.perf = performance(pred, measure = "tpr", x.measure="fpr")
 plot(roc.perf)
 abline(a=0,b=1)
 ```
+
+```{r opt_cutoff}
+opt.cut = function(perf, pred){
+  cut.ind = mapply(FUN=function(x, y, p){
+    d = (x - 0)^2 + (y-1)^2
+    ind = which(d == min(d))
+    c(sensitivity = y[[ind]], specificity = 1-x[[ind]], 
+      cutoff = p[[ind]])
+  }, perf@x.values, perf@y.values, pred@cutoffs)
+}
+
+print(opt.cut(roc.perf, pred))
+```
+
 
 ```{r auc}
 auc.perf = performance(pred, measure ="auc")
