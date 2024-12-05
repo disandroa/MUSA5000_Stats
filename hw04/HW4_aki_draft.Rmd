@@ -26,22 +26,11 @@ library(sf)
 library(spatstat)
 library(ggplot2)
 library(proxy)
-
-
-library(graphics)
-library(maptools)
-library(sp)
-library(fossil)
-library(spatial)
-library(adehabitatHR)
-library(gdata)
-library(raster)
-library(spatialEco)
-library(spatstat.model)
-library(spatstat.explore)
+library(rnaturalearth)
 
 ```
 
+# Introduction
 
 ```{r load_data}
 farmers_market <- st_read("HW 4/Philadelphia_Farmers_Markets201302.shp", quiet = T)
@@ -50,26 +39,53 @@ philly_zips <- st_read("HW 4/Philadelphia_ZipCodes.shp", quiet = T)
 
 philly <- st_read("HW 4/Philadelphia.shp", quiet = T)
 
+# load hydro data for philly
+# source: https://opendataphilly.org/datasets/hydrology/
+hydro <- st_read("https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Hydrographic_Features_Poly/FeatureServer/1/query?outFields=*&where=1%3D1&f=geojson", quiet = T) %>% 
+    st_transform(crs = st_crs(farmers_market))
+
 ```
 
 
-I first want to take a look at what the data looks like
 
-```{r quickmaps}
+
+
+
+
+Are Farmers Markets in Philadelphia clustered?
+
+```{r FMmap}
+# create map
 ggplot() +
   
   # philly data
-  geom_sf(data = philly) +
+  geom_sf(data = philly, fill = "transparent", color = "lightgrey", lwd = 2) +
   
   # philly_zips data
-  geom_sf(data = philly_zips) + 
+  geom_sf(data = philly_zips, fill = "darkgrey", color = "lightgrey", lwd = 0.5) + 
   
   # farmers market data
   geom_sf(data = farmers_market) +
   
-  theme_void()
+  # hydro data
+  geom_sf(data = hydro, fill = "#96dbe3", color = "transparent") + 
   
+  # map limits
+  coord_sf(xlim = c(2660000, 2749276),
+           ylim = c(208915, 310000)) +
+  
+  theme_void() +
+  theme(plot.background = element_rect(fill = "#555555"))
+  
+
 ```
+
+
+
+# Methods
+
+
+
 
 
 Goal: determine if farmers markets in Philadelphia are clustered, randomly distributed, or dispersed using nearest neighbors analysis and k-function analysis.
