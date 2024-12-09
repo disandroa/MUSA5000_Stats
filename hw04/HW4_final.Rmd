@@ -1,0 +1,263 @@
+---
+title: "Examining Predictors of Car Crashes Caused by Alcohol Using Logistic Regression"
+author: "Akira Di Sandro, Sofia Fasullo, Amy Solano"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+  pdf_document:
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T, eval = T, warning = F, message = F)
+
+# get rid of scientific notation
+options(scipen = 999)
+
+# set working directory
+# setwd("~/Library/Mobile Documents/com~apple~CloudDocs/Documents/MUSA/Fall24/MUSA5000_Stats/MUSA5000_Stats/hw04")
+
+# load packages
+library(tidyverse)
+library(sf)
+library(spatstat)
+library(ggplot2)
+library(proxy)
+library(rnaturalearth)
+
+```
+
+# Introduction
+
+```{r load_data}
+farmers_market <- st_read("HW 4/Philadelphia_Farmers_Markets201302.shp", quiet = T)
+
+philly_zips <- st_read("HW 4/Philadelphia_ZipCodes.shp", quiet = T)
+
+philly <- st_read("HW 4/Philadelphia.shp", quiet = T)
+
+# load hydro data for philly
+# source: https://opendataphilly.org/datasets/hydrology/
+hydro <- st_read("https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Hydrographic_Features_Poly/FeatureServer/1/query?outFields=*&where=1%3D1&f=geojson", quiet = T) %>% 
+    st_transform(crs = st_crs(farmers_market))
+
+```
+
+
+
+Are Farmers Markets in Philadelphia clustered?
+
+```{r FMmap}
+# create map
+ggplot() +
+  
+  # philly data
+  geom_sf(data = philly, fill = "transparent", color = "lightgrey", lwd = 2) +
+  
+  # philly_zips data
+  geom_sf(data = philly_zips, fill = "darkgrey", color = "lightgrey", lwd = 0.5) + 
+  
+  # farmers market data
+  geom_sf(data = farmers_market) +
+  
+  # hydro data
+  geom_sf(data = hydro, fill = "#96dbe3", color = "transparent") + 
+  
+  # map limits
+  coord_sf(xlim = c(2660000, 2749276),
+           ylim = c(208915, 310000)) +
+  
+  theme_void() +
+  theme(plot.background = element_rect(fill = "#555555"))
+  
+
+```
+
+
+
+# Methods
+
+
+
+
+
+Goal: determine if farmers markets in Philadelphia are clustered, randomly distributed, or dispersed using nearest neighbors analysis and k-function analysis.
+
+```{r convert2PPP}
+# get coords for farmers markets
+FM_pts <- data.frame(farmers_market %>% 
+  st_coordinates())
+
+# got a warning about duplicated points, and figured out that row 25 and 41 are duplicates
+# checked the farmer_market data and they are in fact both at RTM
+# removing the second point to have all unique points
+FM_pts_nodup <- FM_pts[-41,]
+
+# boundary
+philly_bound <- as.owin(philly)
+
+# define ppp object
+FM_ppp <- ppp(FM_pts_nodup$X, FM_pts_nodup$Y, window = philly_bound)
+
+```
+
+
+# Nearest Neighbors Analysis
+
+```{r NNA}
+# Computes the distance from each point to its nearest neighbor in a point pattern.
+nnd <- nndist.ppp(FM_ppp)
+
+# calculate Mean Observed Distance, Mean Expected Distance and SE.
+MeanObsDist <- mean(nnd)
+MeanExpDist <- 0.5 / sqrt(nrow(farmers_market) / area.owin(philly_bound))
+SE <- 0.26136 / sqrt(nrow(farmers_market)^2 / area.owin(philly_bound))
+
+# calculate z-statistic
+zscore <- (MeanObsDist - MeanExpDist)/SE                     # z = -3.106
+pval <- ifelse(zscore > 0, 1 - pnorm(zscore), pnorm(zscore)) # p = 0.0004
+
+# calculating the NNI
+NNI <- MeanObsDist / MeanExpDist    # NNI = 0.794
+
+```
+
+
+```{r NNA_spatialEco}
+spatialEco::nni(farmers_market[-41,], win = "hull")
+```
+The spatialEco method gives us an even higher NNI (more dispersed) with a p-value of 0.04
+
+
+Possibly add a kernel density plot of farmers markets for a nice visual?
+TODO!!
+can make this prettier in ggplot
+
+```{r}
+# prof did this with the base plot functions
+plot(density(FM_ppp))
+contour(density(FM_ppp), add = T)
+plot(FM_ppp, add = T)
+
+```
+
+
+# K-function Analysis
+
+```{r kFunction}
+# find max distance between points
+max.distance <- max(proxy::dist(data.frame(cbind(x=FM_pts_nodup$X, y=FM_pts_nodup$Y)),
+                                data.frame(cbind(x=FM_pts_nodup$X, y=FM_pts_nodup$Y)),
+                                method="euclidean"))
+# max.distance  # 56698.31
+
+# approximate 56,698.31 to be about 57,000 and dived that by 2 to get rmax
+rmax <- 57000 / 2 # 28500
+
+# define khat
+khat <-Kest(FM_ppp, 
+            rmax = rmax, 
+            correction = "Ripley")
+
+# calculate Ripley's Simulation Confidence Envelopes
+Kenv <- spatstat.explore::envelope(FM_ppp,
+                                   fun = "Kest", 
+                                   rmax = rmax,
+                                   nsim = 99,
+                                   nrank = 1) 
+
+```
+
+TODO!!
+make this in ggplot to make it prettier
+
+```{r plotKFunction}
+# plot Ripley's K-function with 90% simulation envelopes
+plot(Kenv,
+     xlab = "r", ylab = "Khat(r)", 
+     cex.lab = 1.6, cex.axis = 1.5,
+     main = "Ripley's Khat with Confidence Envelopes",
+     cex.main = 1.5, lwd = 2)
+
+```
+
+```{r LFunction}
+# L Function
+lhat <- Lest(FM_ppp,
+             rmax = rmax,
+             correction = "Ripley")
+
+# L Function with 90% envelopes
+Lenv <- spatstat.explore::envelope(FM_ppp,
+                                   fun = "Lest",
+                                   rmax = rmax,
+                                   nsim = 99,
+                                   nrank = 1)
+
+```
+
+
+```{r LFunction_prettierplot}
+L2 <- Lenv %>% 
+  mutate(obs = obs - r,
+         theo = theo - r,
+         lo = lo - r,
+         hi = hi - r)
+
+plot(L2,
+     xlab = "r", ylab = "Lhat(r)", 
+     cex.lab = 1.6, cex.axis = 1.5,
+     main = "Ripley's L-function with Confidence Envelopes",
+     cex.main = 1.5, lwd = 2)
+```
+
+
+
+
+
+TODO!!
+present a map of the farmers markets overlaid on a map of median household income at the zip code level
+
+```{r FM_map_income}
+# create map
+ggplot() +
+  
+  # philly data
+  geom_sf(data = philly, fill = "transparent", color = "lightgrey", lwd = 2) +
+  
+  # philly_zips data
+  geom_sf(data = philly_zips, aes(fill = MedIncome), color = "lightgrey", lwd = 0.5) + 
+  
+  # farmers market data
+  geom_sf(data = farmers_market) +
+  
+  # hydro data
+  geom_sf(data = hydro, fill = "#96dbe3", color = "transparent") + 
+  
+  # map limits
+  coord_sf(xlim = c(2660000, 2749276),
+           ylim = c(208915, 310000)) +
+  
+  # change themes
+  scale_fill_gradient(low = "#742C14FF",
+                      high = "#F0D77BFF",
+                      breaks = c(0, 15000, 30000, 45000, 60000),
+                      limits = c(0,60000),
+                      labels = c("$0", "$15k", "$30k", "$45k", "$60k")) +
+  
+  labs(title = "Philadelphia Farmers Market Locations and Median HH Income by ZIP code",
+       fill = "Med. HH Inc.") +
+  theme_void() +
+  theme(plot.title = element_text(hjust = 0.5),
+        panel.background = element_rect(fill = "#555555"),
+        legend.position = c(.95, .05),
+        legend.justification = c("right", "bottom"),
+        legend.margin = margin(3, 3, 3, 3))
+  
+
+```
+
+
