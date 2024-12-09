@@ -48,10 +48,6 @@ hydro <- st_read("https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/servi
 
 
 
-
-
-
-
 Are Farmers Markets in Philadelphia clustered?
 
 ```{r FMmap}
@@ -242,7 +238,7 @@ plot(L2,
      xlab = "r", ylab = "Lhat(r)", 
      cex.lab = 1.6, cex.axis = 1.5,
      main = "Ripley's L-function with Confidence Envelopes",
-     cex.main = 1.5, lwd = 2, legend = F)
+     cex.main = 1.5, lwd = 2)
 ```
 
 
@@ -251,3 +247,44 @@ plot(L2,
 
 TODO!!
 present a map of the farmers markets overlaid on a map of median household income at the zip code level
+
+```{r FM_map_income}
+# create map
+ggplot() +
+  
+  # philly data
+  geom_sf(data = philly, fill = "transparent", color = "lightgrey", lwd = 2) +
+  
+  # philly_zips data
+  geom_sf(data = philly_zips, aes(fill = MedIncome), color = "lightgrey", lwd = 0.5) + 
+  
+  # farmers market data
+  geom_sf(data = farmers_market) +
+  
+  # hydro data
+  geom_sf(data = hydro, fill = "#96dbe3", color = "transparent") + 
+  
+  # map limits
+  coord_sf(xlim = c(2660000, 2749276),
+           ylim = c(208915, 310000)) +
+  
+  # change themes
+  scale_fill_gradient(low = "#742C14FF",
+                      high = "#F0D77BFF",
+                      breaks = c(0, 15000, 30000, 45000, 60000),
+                      limits = c(0,60000),
+                      labels = c("$0", "$15k", "$30k", "$45k", "$60k")) +
+  
+  labs(title = "Philadelphia Farmers Market Locations and Median HH Income by ZIP code",
+       fill = "Med. HH Inc.") +
+  theme_void() +
+  theme(plot.title = element_text(hjust = 0.5),
+        panel.background = element_rect(fill = "#555555"),
+        legend.position = c(.95, .05),
+        legend.justification = c("right", "bottom"),
+        legend.margin = margin(3, 3, 3, 3))
+  
+
+```
+
+
