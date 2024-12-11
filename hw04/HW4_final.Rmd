@@ -19,6 +19,7 @@ options(scipen = 999)
 
 # set working directory
 # setwd("~/Library/Mobile Documents/com~apple~CloudDocs/Documents/MUSA/Fall24/MUSA5000_Stats/MUSA5000_Stats/hw04")
+# setwd("~/Documents/GitHub/MUSA5000_Stats/hw04")
 
 # load packages
 library(tidyverse)

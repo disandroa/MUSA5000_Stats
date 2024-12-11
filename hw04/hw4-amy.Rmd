@@ -105,7 +105,7 @@ rmax <- 57000 / 2 # 28500
 # define khat
 khat <-Kest(FM_ppp, 
             rmax = rmax, 
-            correction = "Ripley")
+            correction = "best")
 
 # calculate Ripley's Simulation Confidence Envelopes
 Kenv <- spatstat.explore::envelope(FM_ppp,
@@ -119,8 +119,8 @@ Kenv <- spatstat.explore::envelope(FM_ppp,
 ```{r plotKFunction}
 # plot Ripley's K-function with Edge correction
 plot(khat$r, khat$iso, 
-     xlab = "r", ylab = "Ripley's K",
-     main = "Ripley's Estimated K-Function",
+     xlab = "r", ylab = "best k",
+     main = "Machine Best Estimated K-Function",
      cex.lab = 1.6, cex.axis = 1.5, cex.main = 1.5,
      lty = 1, lwd = 2)
 lines(khat$r, khat$theo, 
@@ -130,7 +130,7 @@ lines(khat$r, khat$theo,
 plot(Kenv,
      xlab = "r", ylab = "Khat(r)", 
      cex.lab = 1.6, cex.axis = 1.5,
-     main = "Ripley's Khat with Confidence Envelopes",
+     main = "Machine Best with Confidence Envelopes",
      cex.main = 1.5, lwd = 2)
 
 ```
@@ -138,7 +138,7 @@ plot(Kenv,
 # L Function
 lhat <- Lest(FM_ppp,
              rmax = rmax,
-             correction = "Ripley")
+             correction = "best")
 
 # L Function with 90% envelopes
 Lenv <- spatstat.explore::envelope(FM_ppp,
@@ -153,10 +153,10 @@ Lenv <- spatstat.explore::envelope(FM_ppp,
 ```{r plotLFunction}
 # plot Ripley's L-function
 plot(lhat$r, lhat$iso - lhat$r, 
-     xlab = "r", ylab = "Ripley's L",
+     xlab = "r", ylab = "best L",
      cex.lab = 1.6, cex.axis = 1.5, cex.main = 1.5, 
      lty = 1, lwd = 2, 
-     main="Ripley's Estimated L-Function") 
+     main="best Estimated L-Function") 
 lines(lhat$r, lhat$theo - lhat$r, 
       lty = 8, lwd = 2) 
 
@@ -164,7 +164,7 @@ lines(lhat$r, lhat$theo - lhat$r,
 plot(Lenv,
      xlab = "r", ylab = "Lhat(r)", 
      cex.lab = 1.6, cex.axis = 1.5,
-     main = "Ripley's L-function with Confidence Envelopes",
+     main = "best L-function with Confidence Envelopes",
      cex.main = 1.5, lwd = 2)
 ```
 
@@ -178,6 +178,6 @@ L2$hi <- L2$hi-L2$r
 plot(L2,
      xlab = "r", ylab = "Lhat(r)", 
      cex.lab = 1.6, cex.axis = 1.5,
-     main = "Ripley's L-function with Confidence Envelopes",
+     main = "best L-function with Confidence Envelopes",
      cex.main = 1.5, lwd = 2, legend = F)
 ```
