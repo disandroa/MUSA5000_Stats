@@ -1,0 +1,32 @@
+---
+title: "Text Analysis of IMDb Movie Reviews"
+author: "Akira Di Sandro, Sofia Fasullo, Amy Solano"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+  pdf_document:
+    toc: true
+---
+
+The aim of this Markdown is to demonstrate the use of various text analysis tools in R, including text clustering, word clouds and sentiment analysis.
+
+## Data Description
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#setwd("~/Documents/GitHub/MUSA5000_Stats/hw06")
+
+library(wordcloud)
+library(text)
+library(tm)
+library(SnowballC)
+library(words)
+library(NbClust)
+library(stringr)
+library(dplyr)
+library(syuzhet)
+```
