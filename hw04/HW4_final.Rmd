@@ -74,7 +74,6 @@ ggplot() +
   theme_void() +
   theme(plot.title = element_text(hjust = 0.5),
         panel.background = element_rect(fill = "#555555"))
-  
 
 ```
 
@@ -155,6 +154,8 @@ NNA also does not take into consideration the spatial patterns present at differ
 
 K-function analysis outperforms both Quadrat Analysis and Nearest Neighbor Analysis. It avoids dependence on quadrat size, allows analysis at varying distances or scales, accounts for population density, and accommodates irregularly shaped study areas without assuming a rectangular layout.
 
+### K-Function
+
 K-functions are a set of iterative processes that follow the following steps:
 
 1. Calculate the overall point density for the entire study area. This would be $\frac{n}{A}$, or $n$ many points divided by study area $A$.
@@ -168,7 +169,7 @@ K(d) = \frac{\frac{1}{n} \sum_{i=1}^{n}{S_{i}}}{\frac{n}{A}}
 $$
 Where \text{K}(d) is the K-function at distance $d$, $n$ is the number of total points or events, $S_{i}$ is the number of total *other* points or events at the circle around point $i$, each circle having radius $d$, and $A$ is the total area of the study region.
 
-The `r Kest` funciton in the spatstat.explore package we use to estimate the K-function in R, the K-function is defined as the following:
+The Kest() funciton in the spatstat.explore package we use to estimate the K-function in R, the K-function is defined as the following:
 $$
 \hat{K}(r) = \frac{a}{n(n-1)} \sum_{i} \sum_{j} I(d_{ij} \leq r) e_{ij}
 $$
@@ -184,18 +185,58 @@ At each scale $d$:
 * $K(d) > \pi d^2$ when there exists clustering;
 * and $K(d) < \pi d^2$ when there exists dispersion.
 
+### L-functions
+
 $L(d)$ functions are manipulated K-functions at distance $d$ that provide a more easily interpretable answer by simplifying the output of $K(d)$. 
 $$
 L(d) = \sqrt{\frac{K(d)}{\pi}}-d
 $$
-At scale $d$,
-$L(d) = 0$ when there exists complete spatial randomness (CSR)
-$L(d) \textgreater \space 0$ when there exists clustering
-$L(d) \textless \space 0$ when there exists dispersion
-It should be noted that in the ArcGIS Pro software, $L(d)$ has a different formula: $L(d) = \sqrt{\frac{K(d)}{\pi}}$, so CSR is at $d$, not 0. We are not using ArcGIS for our analysis and will use the first formula to calculate $L(d)$.
+At scale $d$:
+
+* $L(d) = 0$ when there exists complete spatial randomness (CSR);
+* $L(d) > 0$ when there exists clustering;
+* and $L(d) < 0$ when there exists dispersion.
+
+It should be noted that in the ArcGIS Pro software, $L(d)$ has a different formula: $L(d) = \sqrt{\frac{K(d)}{\pi}}$, so CSR is at $d$, not 0. We are not using ArcGIS for our analysis and will use the first formula to calculate $L(d)$. 
+
+We use the Lest() function from the spatstat.explore package in R where the L-function is defined as follows:
+$$
+L(r) = \sqrt{ \frac{K(r)} {\pi} }
+$$
+where $K(r)$ is the K-function and $r$ is radius of the circle.
 
 
+### Beginning and Incremental Distances
 
+When performing K-function and L-function analysis, researchers need to identify the range of distances that will be evaluated through the functions. Often the functions are iterated over 10-20 values of $d$, and researchers can pick the beginning value for $d$ and set the increments at which it should be increased, and/or designate the maximum value. 
+
+Usually, the maximum distance is calculated by dividing the maximum distance between two points in the dataset by 2 (max distance = half of the distance between the two farthest points). In R, the spatstat.explore manual tells us that there is a "sensible default", so it suffices to specify the rmax value (maximum distance).
+
+### Significance Test and Envelopes
+
+We can conduct a significance test for a set distance $d$, with the null hypothesis, $H_0$, being that CSR exists so $L(d)=0$, and the alternate hypothesis, $H_a$, being that there is some spatial pattern so $L(d) \ne 0$. The alternate hypothesis is then further broken down into two subcategories, with $H_{a1}$ being that there is clustering at $d$ (aka when $L(d) > 0$) and $H_{a2}$ being that there is uniformity, or dispersion at $d$ (aka when $L(d) < 0$).
+
+There is no statistic with a particular distribution used for this hypothesis test. Rather, some amount of (i.e. 99) random rearrangements of the data (which always contains $n$ points and the same area $A$) are made. Then each of these data rearrangements will have $L(d)$ evaluated. These values of $L(d)$ can be used as a **“confidence envelope”** to test the hypothesis. The highest value among all those produced is referred to as the *Upper Envelope* value, denoted $L^+(d)$, and the lowest value produced is the *Lower Envelope* value, denoted $L^-(d)$. Our observed $L(d)$ value at $d$ with the original spatial configuration of the data is denoted $L^{obs}(d)$.
+
+We would fail to reject the null hypothesis at $d$ if $L^{obs}(d)$ fell between the upper and lower envelopes, and we would reject the null hypothesis at $d$ if $L^{obs}(d)$ fell outside envelope. Specifically, we would reject $H_0$ for $H_{a1}$ if $L^{obs}(d) > L^+(d)$ and we would reject $H_0$ for $H_{a2}$ if $L^{obs}(d) < L^-(d)$. The number of rearrangements of $n$ data points would roughly equate to the confidence level of the derived conclusions. For example, a test based on an envelope made with 9 rearrangements would result in a conclusion at a confidence level of 90%, and one with 99 rearrangements would correspond to 99% confidence, etc.
+
+This hypothesis test would then be iterated at all values of $d$ to assess whether significant spatial patterns, specifically clustering or dispersion, occurred at different scales of distance.
+
+### Edge Correction
+
+It should be noted that points near the edge of a study area, specifically points whose distance to the edge is less than distance $d$, create an inconsistency in the interpretation. A circle with radius $d$ around such a point would have part of its area outside the study area, and would have a lower chance of having other points, or events, within the circle. The closer a point is to the edge (once already closer than distance $d$), the greater this phenomenon. This undermines the legitimacy of the comparison between the circles around all other points.
+
+The **Ripley’s Edge Correction** accounts for this inconsistency among circles in K-functions by weighing each circle centered at the $i^\text{th}$ point of a dataset with $n$ points by the percentage of its area that falls within the study area. In other words, all points that are greater than $d$ distance from the edge of the study area are weighted by a factor of 1 when calculating $K(d)$, because the circle around them falls completely within the study area. But a point that lies on the edge of a study area and subsequently was the center of a circle with only half its area in the study area would be weighted by a factor of 0.5. Ripley’s Edge Correction accounts for inconsistencies between circles at the edge of a study area and circles further from the edge so that they can be compared, however, if used in ArcGIS Pro, it has the limitation of only working for rectangular study areas. Otherwise, the only limitation of the edge correction is that we do not know which points would have existed beyond the boundary, and it is essentially an inference with some degree of uncertainty.
+
+The **Simulate Outer Values Boundary Correction** offers a different method for edge correction. Rather than deduct from the weight of circles that lie partly outside the study area during K-function calculations, this method extrapolates new data points. It essentially mirrors the points within a circle to the area of the circle outside the study area in attempts to infer what the data would have been there. Like Ripley’s Edge Correction, this method provides a more interpretable result of K-functions, infers data without perfect certainty, and in the end, tends to yield a similar result.
+
+In our study we used both Ripley’s Edge Correction and the “best” method to correct for K-function circles that lay partly outside the study area. 
+
+### Inhomogeneous K-functions
+
+Just because a variable exhibits a significant spatial pattern in the study area does not mean it is intuitively significant. For example, one may see that hospitals are clustered in a certain area of the city or state, and seek to draw conclusions that this displays inequity in health access, only to see that hospitals are clustered where population is clustered. This is an example of when **inhomogeneous K-functions** are appropriate to use. Inhomogeneous K-functions are K-functions that compare the study variable to another variable that has some significant spatial pattern when performing the K-function analysis. 
+
+This can be done by creating a “probability map” of sorts encoding the probability that a point would fall into an area through a continuous raster, using the comparison variable (i.e. population). Normally, when computing the permutations to create the confidence envelope to test a hypothesis based on observed K-function value, these random rearrangements of $n$ points assume that there is equal probability that any point should fall in any area. When conducting a inhomogeneous K-functions test, the observed K-functions value is compared to an envelope comprised of a set of permutations that *did* take into account existing spatial patterns, by inputting more points randomly where there was higher probability of points existing due to the comparison variable.
 
 # Results
 
@@ -238,7 +279,7 @@ NNI <- MeanObsDist / MeanExpDist    # NNI = 0.794
 
 ```
 
-The Nearest Neighbor Analysis results in a nearest neighbor index (NNI) of 0.794 with a z-score fo -3.106 and p < 0.001 (p = 0.0009). Though the NNI is closer to 1 than it is to zero, our z-score is less than -1.96, which means the average observed distance is smaller than the average expected distance, meaning we see significant clustering in the distribution of farmers markets across Philadelphia. We can reject the null hypothesis in favor for the alternative hypothesis stating that the observed point pattern is not random.
+The Nearest Neighbor Analysis results in a nearest neighbor index (NNI) of 0.794 with a z-score of -3.106 and p < 0.001 (p = 0.0009). Though the NNI is closer to 1 than it is to zero, our z-score is less than -1.96, which means the average observed distance is smaller than the average expected distance, meaning we see significant clustering in the distribution of farmers markets across Philadelphia. We can reject the null hypothesis in favor for the alternative hypothesis stating that the observed point pattern is not random, and rather clustered.
 
 
 ```{r NNA_spatialEco, echo=FALSE, results='hide'}
@@ -246,7 +287,7 @@ spatialEco::nni(farmers_market[-41,], win = "hull")
 ```
 We also conducted the NNA with the nni() function in the spatialEco package. This method gave us a higher NNI of 1.136 with a z-score of 2.028 and a p-value of 0.043. In this case, NNI > 1 and z-score > 1.96, so we would reject the null hypothesis to favor the alternative hypothesis that we observe statistically significant dispersion. 
 
-We expect that this inconsistency between the two methods comes from the fact that our latter method does not accept a boundary argument and assumes a convex hull for study area. As a result, this method used an expected mean distance of 2,797 instead of 4,001 that we calculated for the former method. Since the question we are trying to answer with this question is whether farmers markets are clustered in Philadelphia, our study area boundary is central to that question. Since the former method takes into consideration study area, we focus on the results of that method.
+We expect that this inconsistency between the two methods comes from the fact that our latter method does not accept a boundary argument and assumes a convex hull for study area. As a result, this method used an expected mean distance of 2,797 instead of 4,001 that we calculated for the former method. This is a result of one of the limitations of NNA that we discussed in the Methods section. Since the question we are trying to answer with this question is whether farmers markets are clustered in Philadelphia, our study area boundary is central to that question. The former method takes into consideration study area, so we focus on the results of that method.
 
 
 ```{r kerneldensitymap, fig.cap="Fig 2. Kernel Density Plot of Philadelphia Farmers Markets"}
@@ -258,6 +299,7 @@ plot(FM_ppp, add = T)
 
 ```
 
+Figure 2 shows a kernel density plot of Philadelphia farmers markets which, again, clearly highlight the lack of farmers markets in Northeast and South Philadelphia. It also shows that there is a cluster of farmers markets centered around Center City and another potential cluster around Northwest Philadelphia.
 
 ## K-Function Analysis
 
@@ -274,7 +316,7 @@ rmax <- 57000 / 2 # 28500
 # define khat
 khat <-Kest(FM_ppp, 
             rmax = rmax, 
-            correction = "Ripley")
+            correction = "best")
 
 # calculate Ripley's Simulation Confidence Envelopes
 Kenv <- spatstat.explore::envelope(FM_ppp,
@@ -284,11 +326,9 @@ Kenv <- spatstat.explore::envelope(FM_ppp,
                                    nrank = 1) 
 
 ```
+In our K-function analysis, we used a max distance of 28,500 ft since the two points that were furthest apart from each other were about 56,698 ft apart (rounded to 57,000 before dividing by 2). As stated in our methods section, we used the "best" method as the edge correction with 99 simulations (for a 99% confidence envelope).
 
-
-
-
-```{r plotKFunction}
+```{r plotKFunction, fig.cap="Fig 3. Ripley's K-Function with Confidence Envelopes"}
 # plot Ripley's K-function with 90% simulation envelopes
 plot(Kenv,
      xlab = "r", ylab = "Khat(r)", 
@@ -298,11 +338,15 @@ plot(Kenv,
 
 ```
 
+As shown in figure 3 above, the observed K-function is consistently above the expected K-function and the 99% envelopes. More specifically, until a distance of about 3,000 ft, we observe a random spatial pattern, but for distances greater than 3,000 ft, the observed $\hat{K}$ is greater than the theoretical $K$
+
+
+
 ```{r LFunction, echo=FALSE, results='hide'}
 # L Function
 lhat <- Lest(FM_ppp,
              rmax = rmax,
-             correction = "Ripley")
+             correction = "best")
 
 # L Function with 90% envelopes
 Lenv <- spatstat.explore::envelope(FM_ppp,
@@ -314,7 +358,7 @@ Lenv <- spatstat.explore::envelope(FM_ppp,
 ```
 
 
-```{r LFunction_prettierplot}
+```{r LFunction_prettierplot, fig.cap="Fig 4. Ripley's L-Function with Confidence Envelopes"}
 L2 <- Lenv 
 L2$obs <- L2$obs-L2$r
 L2$theo <- L2$theo-L2$r
@@ -329,9 +373,10 @@ plot(L2,
 ```
 
 
+# Discussion
 
 
-```{r FM_map_income, fig.cap="Fig 3. Philadelphia Farmers Markets and Median HH Income by ZIP Code"}
+```{r FM_map_income, fig.cap="Fig 5. Philadelphia Farmers Markets and Median HH Income by ZIP Code"}
 # create map
 ggplot() +
   
