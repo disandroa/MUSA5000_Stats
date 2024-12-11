@@ -158,9 +158,9 @@ max.distance <- max(proxy::dist(data.frame(cbind(x=FM_pts_nodup$X, y=FM_pts_nodu
 rmax <- 57000 / 2 # 28500
 
 # define khat
-khat <-Kest(FM_ppp, 
-            rmax = rmax, 
-            correction = "Ripley")
+khat <- Kest(FM_ppp, 
+             rmax = rmax, 
+             correction = "all")
 
 # calculate Ripley's Simulation Confidence Envelopes
 Kenv <- spatstat.explore::envelope(FM_ppp,
@@ -197,7 +197,7 @@ plot(Kenv,
 # L Function
 lhat <- Lest(FM_ppp,
              rmax = rmax,
-             correction = "Ripley")
+             correction = "all")
 
 # L Function with 90% envelopes
 Lenv <- spatstat.explore::envelope(FM_ppp,
