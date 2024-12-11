@@ -176,6 +176,7 @@ Kenv <- spatstat.explore::envelope(FM_ppp,
 
 
 
+
 ```{r plotKFunction}
 # plot Ripley's K-function with 90% simulation envelopes
 plot(Kenv,
