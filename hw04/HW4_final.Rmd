@@ -1,5 +1,5 @@
 ---
-title: "Examining Predictors of Car Crashes Caused by Alcohol Using Logistic Regression"
+title: "Are Farmer's Markets in Philadelphia Completely Spatially Random?"
 author: "Akira Di Sandro, Sofia Fasullo, Amy Solano"
 date: "`r Sys.Date()`"
 output:
@@ -47,11 +47,10 @@ hydro <- st_read("https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/servi
 
 ```
 
+Access to healthy, locally grown food remains a challenge for many American cities, including Philadelphia. To address this, the Philadelphia Food Trust has established numerous farmers markets across the city, providing benefits such as fresher, seasonal, and healthier foods; diverse offerings like organic produce and heritage meats; and opportunities for community interaction and outdoor activity. However, large parts of South, North, and all of Northeast Philadelphia lack farmers markets, leaving residents without these advantages. In this study, we analyze the spatial distribution of farmers markets in Philadelphia to determine whether they are randomly placed, dispersed, or clustered.
 
 
-Are Farmers Markets in Philadelphia clustered?
-
-```{r FMmap, fig.cap="Fig 1. Philadelphia Farmers Markets}
+```{r FMmap, fig.cap="Fig 1. Philadelphia Farmers Markets"}
 # create map
 ggplot() +
   
@@ -79,10 +78,121 @@ ggplot() +
 
 ```
 
+Figure 1 shows the distribution of farmers markets in Philadelphia. It is evident from this map that there are pockets of Northeast, South, and North Philadelphia that do not have easy access to farmers markets.
 
-Goal: determine if farmers markets in Philadelphia are clustered, randomly distributed, or dispersed using nearest neighbors analysis and k-function analysis.
 
 # Methods
+
+## Complete Spatial Randomness (CSR)
+
+Complete spatial randomness, or CSR, occurs when a set of points meets two crucial conditions. The first is that the probability that the point is in a spatially bounded area, or “cell” is directly proportional to how big that cell is. The latter is that the placing of one point has no effect on the placing of another point.
+
+If neither conditions are met, the points could be clustered rather than completely spatially random (CSR). This means that if you drew two small cells of the same size, one may contain a great number of close points, and the other very few scattered points. If the points were CSR, then two cells of the same size would have the same probability for having points in them, and should have a similar number of points inside. This would also violate the second condition because the placement of one point implies there will be other points clustered nearby, which does not show independence.
+
+If the second condition is not met, the points are likely dispersed rather than CSR. Dispersion is a spatial pattern where points are almost all equally spaced from each other, leading to an organized appearance. With dispersed points, the placement of one point means the next point is likely a set distance away, which violates the CSR condition of independence of point placements. With CSR points, given a point placement, the next point could be close or far, yet the zoomed-out effect is not of clustering.
+
+## Null and Alternative Hypotheses
+
+The null hypothesis in point pattern analyses is that the points are completely spatially random (CSR), and the alternate hypothesis is that the points are not CSR, whether they be clustered or dispersed. In the context of this study, this means that the locations of farmers markets in Philadelphia will have a spatial pattern that is not statistically significantly different from a random pattern under the null hypothesis, meaning that they are equally likely to occur across the city and the placement of one does not affect the placement of another. The alternate hypothesis is farmers markets have some non-random spatial pattern in Philadelphia (clustered or dispersed). 
+
+## Quadrat Method
+
+One example of point pattern analysis is the quadrat method. The Quadrat method is completed by dividing a spatial area by straight gridded lines of uniform distance, thus slicing the space into squares with equal area. We take the total sum of points for each cell and use the mean and variance of sum as well as VMR (variance-mean ratio, aka variance divided by mean). If the mean and variance are nearly equal (VMR of about 1), we fail to reject the null hypothesis that the points are CSR. If the variance is close to zero, then we reject the null hypothesis in favor of the alternative. The points are considered to be dispersed, because nearly every cell has the same number of points. If the variance is much larger than the mean, then we reject the null hypothesis and the points are considered to be clustered, because high variance indicates a large number of points in some cells and small number of points in others.
+
+### Limitations of Quadrat Method
+
+The Quadrat method has significant limitations. For one, the size of the cells used to divide the area can change the results of the test. The larger the cell, the more likely it is to summarize a similar total number of points per cell and overlook more fine-grain variation. Meanwhile, smaller cell sizes are more likely to capture gaps between points and lead to a high number of cells without points and thus a higher variance between cells with points. Thus, it is difficult to understand the optimal cell size in order to understand tests if points are CSR, because tests with smaller cells are more likely to report clustering and tests with bigger cells are more likely to report dispersion.
+
+Another limitation of the Quadrat method is that the sum of points in a cell is an aggregation which does not detail the spatial distribution of the points in that cell. For example, two adjacent cells that each contain one point could have those points right next to each other or far away from each other but would display the same sum value for the Quadrat analysis. This can exclude important data to understand whether there may be CSR in a set of points or not.
+
+## Nearest Neighbor Analysis (NNA)
+
+Rather than comparing points within an arbitrarily determined grid cell, Nearest Neighbor analysis compares every point to its closest nearby point, no matter how close or far that point is. 
+
+The Nearest Neighbor analysis method first records $n$-many distances, one measure of the distance for each ${i}^{\text{th}}$ point and its closest neighboring point. The average of these distances is referred to as the **observed average distance** ($\bar{D}_O$). This can be calculated by the formula below:
+$$
+ \bar{D}_O = \frac{\sum_{n}^{i=1}{D_i}}{n}
+$$
+Where $n$ is the number of points, or observations, and $D_i$ is the distance between the ${i}^{\text{th}}$ point and its nearest neighbor.
+
+In order to put the observed average distance value into context, this number is compared to the average difference between a set of points that were distributed randomly without spatial pattern. This is called the **expected average distance** ($\bar{D}_E$). Mathematically, this number can be calculated with the following formula:
+$$
+ \bar{D}_E = \frac{0.5}{\sqrt{\frac{n}{A}}}
+$$
+Where $n$ is the number of points, or observations, and $A$ is the total area of the space the points are in.
+
+Together, these two statistics are used to calculate the **nearest neighbor index (NNI)**, the statistic used in nearest neighbor analysis. The formula for NNI is as follows:
+$$
+\text{NNI} = \frac{\bar{D}_O}{\bar{D}_E}
+$$
+The NNI value provides a simple way to compare a set of points’ spatial pattern in comparison to a random spatial pattern. An NNI value of 1 indicates spatial randomness. An NNI value of 0 is a perfect single clustering of all points at 1 point, so NNI values close to 0 indicate clustering. An NNI value close to 2 indicates dispersion, with the maximum possible dispersion being a perfect hexagonal pattern of points that yield an NNI value of 2.149.
+
+We test the significance of this statistic using a $z$-test, which is very similar to a T-test but uses a standard normal (z) distribution rather than a T distribution. The following statistic comprised of observed and expected average distances follows a standard normal distribution: 
+$$
+z = \frac{{\bar{D}_O}-{\bar{D}_E}}{\text{SE}_{\bar{D}_O}}
+$$
+Where $\text{SE}_{\bar{D}_O}$ is the standard error among all $n$ observed distances between each point and its nearest neighbor. 
+
+The standard error of all observed distances, $\text{SE}_{\bar{D}_O}$, is calculated using the following simplified formula:
+$$
+\text{SE}_{\bar{D}_O} = \frac{0.26136}{\sqrt{\frac{n^2}{A}}}
+$$
+where $n$ is the number of observations and $A$ is the area of the study region. We use the standard normal table to get a p-value from our calculated $z$ statistic and reject the null hypothesis when p < 0.05.
+
+Therefore, using this statistic we can calculate the probability of obtaining the observed value of this statistic from our sample under the null hypothesis. In this case, our null hypothesis, $H_0$, is that the sample has no spatial pattern and is random, and our alternate hypothesis, $H_a$, is that there *is* a significant non-random spatial pattern, either clustering or dispersion. Specifically, when $z$ > 1.96, we reject the null hypothesis in favor of the alternative hypothesis, saying we have significant dispersion (since the average observed distance is greater than the average expected distance). On the other hand, when $z$ < -1.96, we reject the null hypothesis in favor of the alternative hypothesis, saying we have significant clustering (since the average observed distance is less than the average expected distance).
+
+### Limitations of NNA
+
+While nearest neighbor analysis is a more thorough method of investigating spatial pattern among points than the Quadrat Method, it still has a number of limitations. For one, the method only considers the *first* nearest neighbor. A point in a cluster of two points vs a point in a cluster of 100 points is intuitively very different, but may yield the same distance between its first neighbor. For this reason, nearest neighbor analysis misses some nuance in spatial pattern.
+
+Another large setback of nearest neighbor analysis is its heavy dependence on the area that contains the points. The smallest possible area that contains all points in a study would yield the smallest possible $\bar{D}_E$, or average expected distance, and any increase in area is directly related to the resulting calculation, yet $\bar{D}_O$, or average observed distance is not affected. In addition, different shapes used to bound the points may have different areas. This greatly influences the conclusions drawn from such values as NNI and the $z$-distributed statistics. In softwares, such as ArcGIS Pro developed by ESRI, the boundary cannot even be determined but is automatically set to the smallest possible rectangle. This makes it cumbersome to analyze a set of points that do not cover an entire space, because the software will reduce that space to a smaller one, essentially changing your study area.
+
+Say you wished to analyze whether hospitals in Philadelphia exhibit a significant spatial pattern. The City of Philadelphia follows an irregular, non-rectangular shape, and the hospitals are located primarily in the center of the city. Doing this calculation with software such as ArcGIS Pro, which automatically uses the smallest bounding rectangle, you are not actually analyzing the presence of spatial patterns with accuracy to the scale of the entire city. To do this, you would have to specify the shape, but even that is difficult, so you would have to create a shape of equal area to the city of Philadelphia which contains the points. Overall, this method is clunky and not ideal for efficient analysis.
+
+NNA also does not take into consideration the spatial patterns present at different scales. The next method we describes tackles this problem better.
+
+## K-Function Analysis
+
+K-function analysis outperforms both Quadrat Analysis and Nearest Neighbor Analysis. It avoids dependence on quadrat size, allows analysis at varying distances or scales, accounts for population density, and accommodates irregularly shaped study areas without assuming a rectangular layout.
+
+K-functions are a set of iterative processes that follow the following steps:
+
+1. Calculate the overall point density for the entire study area. This would be $\frac{n}{A}$, or $n$ many points divided by study area $A$.
+2. Draw $n$-many circles, each with radius $d$ around each point.
+3. Sum the number of points or events, in each circle minus one. This is the total number of other events in that circle, excluding the original event at the center of the circle.
+4. Average all total other events. 
+5. The K-function at this set distance, $d$ equals the average other events at radius d divided by the overall point density.
+
+$$
+K(d) = \frac{\frac{1}{n} \sum_{i=1}^{n}{S_{i}}}{\frac{n}{A}}
+$$
+Where \text{K}(d) is the K-function at distance $d$, $n$ is the number of total points or events, $S_{i}$ is the number of total *other* points or events at the circle around point $i$, each circle having radius $d$, and $A$ is the total area of the study region.
+
+The `r Kest` funciton in the spatstat.explore package we use to estimate the K-function in R, the K-function is defined as the following:
+$$
+\hat{K}(r) = \frac{a}{n(n-1)} \sum_{i} \sum_{j} I(d_{ij} \leq r) e_{ij}
+$$
+where $a$ is the area of the window (study region), $n$ is the number of observations, $I(d_{ij} \leq r)$ is the indicator that equals 1 when the distance between any two points $i$ and $j$ is less than or equal to $r$, the radius of the circle, and $e_{ij}$ is the edge correction weight which depends on the edge correction type we specify. In our analyses, we specified the edge correction to be "best" which selects the best edge correction available for the geometry of our study region. 
+
+We then repeat the K-function process (steps 1-5) for any number of distance values, $d$.
+
+K-functions are incredibly useful because they provide detailed information that can capture the nuance of spatial point patterns at different scales. For example, a dataset of bees on a honey farm would show bees clustered at each hive (when zoomed into one or a few hives), but zooming out would show the hives dispersed among their rows and columns on the farm. The iteration of K-functions over a variety of distances collects this change in spatial pattern interpretation.
+
+At each scale $d$:
+
+* $K(d) = \pi d^2$ when there exists complete spatial randomness (CSR);
+* $K(d) > \pi d^2$ when there exists clustering;
+* and $K(d) < \pi d^2$ when there exists dispersion.
+
+$L(d)$ functions are manipulated K-functions at distance $d$ that provide a more easily interpretable answer by simplifying the output of $K(d)$. 
+$$
+L(d) = \sqrt{\frac{K(d)}{\pi}}-d
+$$
+At scale $d$,
+$L(d) = 0$ when there exists complete spatial randomness (CSR)
+$L(d) \textgreater \space 0$ when there exists clustering
+$L(d) \textless \space 0$ when there exists dispersion
+It should be noted that in the ArcGIS Pro software, $L(d)$ has a different formula: $L(d) = \sqrt{\frac{K(d)}{\pi}}$, so CSR is at $d$, not 0. We are not using ArcGIS for our analysis and will use the first formula to calculate $L(d)$.
 
 
 
@@ -139,7 +249,7 @@ We also conducted the NNA with the nni() function in the spatialEco package. Thi
 We expect that this inconsistency between the two methods comes from the fact that our latter method does not accept a boundary argument and assumes a convex hull for study area. As a result, this method used an expected mean distance of 2,797 instead of 4,001 that we calculated for the former method. Since the question we are trying to answer with this question is whether farmers markets are clustered in Philadelphia, our study area boundary is central to that question. Since the former method takes into consideration study area, we focus on the results of that method.
 
 
-```{r kerneldensitymap, fig.cap="Fig 2. Kernel Density Plot of Philadelphia Farmers Markets}
+```{r kerneldensitymap, fig.cap="Fig 2. Kernel Density Plot of Philadelphia Farmers Markets"}
 # prof did this with the base plot functions
 plot(density(FM_ppp),
      main = "Kernel Density Plot of Farmers Markets in Philadelphia")
@@ -221,7 +331,7 @@ plot(L2,
 
 
 
-```{r FM_map_income}
+```{r FM_map_income, fig.cap="Fig 3. Philadelphia Farmers Markets and Median HH Income by ZIP Code"}
 # create map
 ggplot() +
   
