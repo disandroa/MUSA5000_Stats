@@ -1,5 +1,5 @@
 ---
-title: "Examining Predictors of Car Crashes Caused by Alcohol Using Logistic Regression"
+title: "Are Farmer's Markets in Philadelphia Completely Spatially Random?"
 author: "Akira Di Sandro, Sofia Fasullo, Amy Solano"
 date: "`r Sys.Date()`"
 output:
