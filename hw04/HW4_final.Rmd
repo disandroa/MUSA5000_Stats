@@ -338,7 +338,7 @@ plot(Kenv,
 
 ```
 
-As shown in figure 3 above, the observed K-function is consistently above the expected K-function and the 99% envelopes. More specifically, until a distance of about 3,000 ft, we observe a random spatial pattern, but for distances greater than 3,000 ft, the observed $\hat{K}$ is greater than the theoretical $K$
+As shown in figure 3 above, the observed K-function is consistently above the expected K-function and the 99% envelopes. More specifically, until a distance of about 3,000 ft, we observe a random spatial pattern, but for distances greater than 3,000 ft, the observed $\hat{K}$ is greater than the theoretical $K$, meanign we observe clustering at these scales. 
 
 
 
