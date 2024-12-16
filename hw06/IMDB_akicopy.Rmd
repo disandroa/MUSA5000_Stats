@@ -1,0 +1,370 @@
+---
+title: "Text Analysis"
+author: "Akira Di Sandro, Sofia Fasullo, Amy Solano"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+  pdf_document:
+    toc: true
+---
+
+# Introduction
+
+The aim of this project...
+
+## Data Description
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T, eval = T, warning = F, message = F)
+
+# get rid of scientific notation
+options(scipen = 999)
+```
+
+Here, we have a list of IMDB Reviews. 
+
+First, let's load the required `R` libraries.
+
+```{r libraries, message=FALSE, warning=FALSE}
+library(wordcloud)
+# library(text)
+library(tm)
+library(SnowballC)
+library(words)
+library(NbClust)
+library(stringr)
+library(dplyr)
+library(ggplot2)
+library(syuzhet)
+library(ggplot2)
+```
+
+
+```{r load-data}
+imdb_df <- read.csv("Data/IMDB_Dataset.csv")
+```
+
+```{r create_string}
+imdb_review_text <- imdb_df$review
+```
+
+
+## Data Preprocessing 
+
+The first thing we want to do is to convert the text in all of these URLS into a Corpus. A text corpus (plural: _corpora_) "is a large and unstructured set of texts (nowadays usually electronically stored and processed) used to do statistical analysis and hypothesis testing, checking occurrences or validating linguistic rules within a specific language territory."
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+# Load and preprocess all text documents
+myCorpus <- tm::VCorpus(VectorSource(imdb_review_text))
+
+# Convert everything to lower case
+myCorpus <- tm_map(myCorpus, content_transformer(tolower))
+```
+
+No need to concatenate because each review is only one line.
+
+```{r check_cat warning=FALSE, message=FALSE, cache=FALSE}
+
+line_2 <- numeric(50000)
+for (i in 1:50000) {
+  # Check if the second element in myCorpus[[i]] is NA - therefore review is one line
+  obj <- ifelse(is.na(content(myCorpus[[i]])[2]), 0, 1)
+  line_2[i] <- obj
+}
+# see if any results are 1, aka there is a second line
+table(line_2)
+```
+There are no reviews with more than one line, so we do not need to concatenate any lines.
+
+Observe first review: there will be lots of punctuation and special characters.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+content(myCorpus[[1]])[1]
+```
+
+
+Now that we have the data in a corpus, let's do some data cleaning, by converting a bunch of special characters (e.g., **@**, **/**, **]**, **$**) to a space and by removing apostrophes.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+#     Defining the toSpace function
+toSpace <- content_transformer(function(x, pattern) gsub(pattern, " ", x))
+#     Defining the remApostrophe function
+remApostrophe <- content_transformer(function(x,pattern) gsub(pattern, "", x))
+#     Removing special characters
+myCorpus <- tm_map(myCorpus, toSpace, "@")
+myCorpus <- tm_map(myCorpus, toSpace, "<br />") # remove breaks in html formatting
+myCorpus <- tm_map(myCorpus, toSpace, "/")
+myCorpus <- tm_map(myCorpus, toSpace, "]")
+myCorpus <- tm_map(myCorpus, toSpace, "$")
+myCorpus <- tm_map(myCorpus, toSpace, "—")
+myCorpus <- tm_map(myCorpus, toSpace, "‐")
+myCorpus <- tm_map(myCorpus, toSpace, "”")
+myCorpus <- tm_map(myCorpus, toSpace, "‘")
+myCorpus <- tm_map(myCorpus, toSpace, "“")
+myCorpus <- tm_map(myCorpus, toSpace, "‘")
+
+myCorpus <- tm_map(myCorpus, remApostrophe, "’")
+```
+
+
+recheck first element
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+content(myCorpus[[1]])[1]
+```
+
+Now, let's remove numbers and punctuation.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+myCorpus <- tm::tm_map(myCorpus, removeNumbers)
+myCorpus <- tm_map(myCorpus, removePunctuation)
+```
+
+recheck first element
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+content(myCorpus[[1]])[1]
+```
+
+Now, let's look at a list of English stop words (e.g., _a_, _to_) that we can remove from the documents. Stop words are frequent terms that often don't provide a lot of useful information.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+stopwords("english")
+myCorpus <- tm_map(myCorpus, removeWords, stopwords("english"))
+```
+
+recheck first element
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+content(myCorpus[[1]])[1]
+```
+what are the most common words?
+
+We can also remove additional (i.e., self-defined) stop words, such as that appear in the first few lines of the text.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+myCorpus <- tm_map(myCorpus, removeWords,c("movie", "film", "imdb", 
+                                           "review", "cinema", "theater", "feature", "screen"))
+```
+
+Lastly, depending on the problem, we can potentially play around with stemming. This removes common word suffixes and endings like _es_, _ed_, _ing_, etc. Alternatively, there is lemmatization, which groups together different inflected forms of the same word. Lemmatization can also be done in R.But it's generally agreed stemming is better.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE, eval=FALSE}
+myCorpus <- tm_map(myCorpus, stemDocument)
+```
+
+recheck first element
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+content(myCorpus[[1]])[1]
+```
+## Length of documents
+```{r check_cat warning=FALSE, message=FALSE, cache=FALSE}
+
+# Calculate word counts for all documents
+word_counts <- sapply(myCorpus, function(doc) {
+  length(unlist(strsplit(as.character(doc), "\\s+")))
+})
+
+# Create a histogram using base R
+hist(word_counts, 
+     breaks = 10,  # Adjust number of bins
+     main = "Histogram of Word Counts per Document", 
+     xlab = "Word Count", 
+     ylab = "Number of Documents",
+     col = "skyblue")
+
+# Alternatively, use ggplot2 for more customization
+word_count_df <- data.frame(word_counts = word_counts)
+
+ggplot(word_count_df, aes(x = word_counts)) +
+  geom_histogram(fill = "skyblue", color = "black") +
+  labs(title = "Histogram of Word Counts per Document", 
+       x = "Word Count", 
+       y = "Number of Documents") +
+  theme_minimal()
+```
+
+```{r}
+max_words =  max(word_count_df$word_counts)
+min_words = min(word_count_df$word_counts)
+sentence = paste("The shortest reviews had", min_words, "words and the longest reviews had", max_words, "words.")
+print(sentence)
+```
+
+
+
+## Document Term Matrix
+
+Because of spelling issues on behalf of the reviewers, we did not filter out words that did not belong to the dictionary.
+
+In addition, our dataset does not contain information on the movie that is the subject of each review, so we are not pairing the reviews to any specific movie grouping. we are simply analyzing review text.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+dtm <- DocumentTermMatrix(myCorpus)
+
+tm::inspect(dtm)
+```
+
+This is an extremely large and sparse matrix and takes up a lot of data, so before turning it into a matrix object from a DocumentTermMatrix object, some trimming:
+
+```{r trim}
+dtm_reduced <- removeSparseTerms(dtm, sparse = 0.995)  # Retain terms present in at least 0.5% of documents, so at least 250 reviews
+
+```
+
+
+Let's convert the DTM to a matrix. As you can see, we significantly reduced the bloat of the matrix.
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+m <- as.matrix(dtm_reduced)
+dim(m)
+```
+
+Now, let's look at the term distribution. Note that all of these terms (words) appear in at least 250 documents (reviews), but how many times in each document does a term appear?
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+# shortest reviews
+word_count_asc <- word_count_df %>% 
+  arrange(word_counts)
+
+short10_index <- as.numeric(rownames(word_count_asc)[1:10])
+
+short10 <- m[short10_index,]
+
+# longest reviews
+word_count_desc <- word_count_df %>% 
+  arrange(desc(word_counts))
+
+long10_index <- as.numeric(rownames(word_count_desc)[1:10])
+
+long10 <- m[long10_index,]
+
+cs <- as.matrix(colSums(m))             #How many times each term appears across all documents (texts)
+rownames(cs) <- dtm_reduced$dimnames$Terms
+
+hist(cs, breaks=100,main = "Histogram of word frequencies",xlab="Repition of word across all reviews",ylab="Number of words")                    #Let's look at some histograms/tabulations/word cloud of total term appearance. 
+
+```
+As you can see, most words (terms) were repeated between 1-100x per review. There are some outliers as the histogram tapers to the right, so it may be that there are still filler words that need to be removed.
+
+```{r}
+term_frequencies <- sort(cs[,1], decreasing = TRUE)
+head(term_frequencies,100)
+
+```
+Some words occur in the 10s of thousands - but not all look like fillers.
+
+```{r}
+
+#AI says these are fillers: 
+#one, like, just, even, really, well, also, much, still, say, now, though, actually, pretty, quite, however, may
+#but I think they may be important to show a reviewers feelings or hesitation
+
+myCorpus <- tm_map(myCorpus, removeWords,c("one", "like", "just", "even", "time", "really", " see", "can", "much", "well", "get", "will", "also", "first", "dont", "movies", "made", "make", "films", "way", "watch", "many", "seen", "two", "character", "never", "know", "ever", "still", "say", "end", "something", "back", "watching", "thing", "doesnt", "now", "didnt", "years", "another", "though", "actually", "makes", "nothing", "find", "look", "going", "work", "lot", "every", "part", "cant", "want", "quite", "things", "seems", "around", "got", "take", "however", "fact", "give", "thought", "ive", "may", "without", "saw"))
+
+```
+
+
+```{r prep_cloud}
+term_frequencies[1780]
+```
+
+Already can see that almost 1800 words have a frequency over 500 words across all documents, so the threshold will need to be very high - the wordcloud should have around 200 words.
+
+```{r prep_cloud}
+term_frequencies[150]
+```
+So the threshold will be set at 5000, a nice even number to limit the wordcloud to only the most used words
+
+```{r wordcloud}
+
+wordcloud(myCorpus, min.freq=5000)
+```
+
+
+
+# the rest
+
+
+## Sentiment Analysis
+
+Load sentiment dictionaries
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+nrc <- syuzhet::get_sentiment_dictionary(dictionary="nrc")
+head(nrc, n=20L)
+afinn <- syuzhet::get_sentiment_dictionary(dictionary="afinn")
+head(afinn, n=20L)
+bing <- syuzhet::get_sentiment_dictionary(dictionary="bing")
+head(bing, n=20L)
+syuzhet <- syuzhet::get_sentiment_dictionary(dictionary="syuzhet")
+head(syuzhet, n=20L)
+```
+
+Test first review
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+review_1 <- as.data.frame(m[1,])
+review_1 $Term <- as.vector(rownames(review_1))
+colnames(review_1)[1] = "Term_Frequency"
+rownames(review_1) <- 1:nrow(review_1)
+
+nrc_sentiment <- get_nrc_sentiment(review_1$Term)
+```
+
+Let's combine the original data frame and the sentiment counts.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+review_1_Sentiment <- cbind(review_1, nrc_sentiment)
+```
+
+Now let's multiply the sentiment by the frequency of the term.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+# Select the columns to be multiplied (last ten columns)
+cols_to_multiply <- names(review_1_Sentiment)[3:12]
+
+# Multiply the last ten columns (sentiments) by the first column (Term_Frequency)
+review_1_Sentiment[, cols_to_multiply] <- review_1_Sentiment[, cols_to_multiply] * review_1_Sentiment$Term_Frequency
+```
+
+Now, let's see the total prevalence of each sentiment in the text by summing each column and creating a bar plot
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+review_1_Sentiment_Total <- t(as.matrix(colSums(review_1_Sentiment[,-1:-2])))
+barplot(review_1_Sentiment_Total, las=2, ylab='Count', main='Sentiment Scores')
+```
+MIGHT REMOVE THIS:
+Remember that the first review got a "positive" in the original dataset - but also are these the same reviews? not sure how indexed
+
+```{r}
+head(imdb_df$sentiment,1)
+
+```
+continuing, using the syuzhet lexicon for the first 100 reviews because there are too many
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+review_1$Syuzhet <- as.matrix(get_sentiment(review_1$Term, method="syuzhet"))
+hist(review_1$Syuzhet)
+
+
+```
+
+looks neutral?
+
+
+## References
+
+1. Hill, Chelsey. 2023. "Sentiment Analysis (Lexicons)". Rstudio-Pubs-Static.S3.Amazonaws.Com. https://rstudio-pubs-static.s3.amazonaws.com/676279_2fa8c2a7a3da4e7089e24442758e9d1b.html.
+
+2. "Sentiment Analysis In R | R-Bloggers". 2021. R-Bloggers. https://www.r-bloggers.com/2021/05/sentiment-analysis-in-r-3/.
+
+3. Robinson, Julia. 2023. "2 Sentiment Analysis With Tidy Data | Text Mining With R". Tidytextmining.Com. https://www.tidytextmining.com/sentiment.html.
+
+4. "Text Mining: Sentiment Analysis · AFIT Data Science Lab R Programming Guide ". 2023. Afit-R.Github.Io. https://afit-r.github.io/sentiment_analysis.
+
+5. "TDM (Term Document Matrix) And DTM (Document Term Matrix)". 2023. Medium. https://medium.com/analytics-vidhya/tdm-term-document-matrix-and-dtm-document-term-matrix-8b07c58957e2.
+
+6. "Text Clustering With R: An Introduction For Data Scientists". 2018. Medium. https://medium.com/@SAPCAI/text-clustering-with-r-an-introduction-for-data-scientists-c406e7454e76.
+
+7. "Introductory Tutorial To Text Clustering With R". 2023. Rstudio-Pubs-Static.S3.Amazonaws.Com. https://rstudio-pubs-static.s3.amazonaws.com/445820_c6663e5a79874afdae826669a9499413.html.
+
+8. "Library Guides: Text Mining & Text Analysis: Language Corpora". 2023. Guides.Library.Uq.Edu.Au. https://guides.library.uq.edu.au/research-techniques/text-mining-analysis/language-corpora.
