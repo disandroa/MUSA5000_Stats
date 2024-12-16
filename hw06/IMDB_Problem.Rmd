@@ -2,7 +2,13 @@
 title: "Text Analysis"
 author: "Akira Di Sandro, Sofia Fasullo, Amy Solano"
 date: "`r Sys.Date()`"
-output: rmdformats::readthedown
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+  pdf_document:
+    toc: true
 ---
 
 # Introduction
@@ -12,7 +18,10 @@ The aim of this project...
 ## Data Description
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = T, eval = T, warning = F, message = F)
+
+# get rid of scientific notation
+options(scipen = 999)
 ```
 
 Here, we have a list of IMDB Reviews. 
@@ -21,7 +30,7 @@ First, let's load the required `R` libraries.
 
 ```{r libraries, message=FALSE, warning=FALSE}
 library(wordcloud)
-#library(text)
+# library(text)
 library(tm)
 library(SnowballC)
 library(words)
@@ -29,9 +38,10 @@ library(NbClust)
 library(stringr)
 library(dplyr)
 library(syuzhet)
+library(ggplot2)
 ```
 
-Now, it's time to load and preprocess the text of the books from www.gutenberg.org.
+
 ```{r load-data}
 imdb_df <- read.csv("Data/IMDB_Dataset.csv")
 ```
