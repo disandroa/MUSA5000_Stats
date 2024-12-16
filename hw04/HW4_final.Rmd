@@ -148,7 +148,7 @@ Another large setback of nearest neighbor analysis is its heavy dependence on th
 
 Say you wished to analyze whether hospitals in Philadelphia exhibit a significant spatial pattern. The City of Philadelphia follows an irregular, non-rectangular shape, and the hospitals are located primarily in the center of the city. Doing this calculation with software such as ArcGIS Pro, which automatically uses the smallest bounding rectangle, you are not actually analyzing the presence of spatial patterns with accuracy to the scale of the entire city. To do this, you would have to specify the shape, but even that is difficult, so you would have to create a shape of equal area to the city of Philadelphia which contains the points. Overall, this method is clunky and not ideal for efficient analysis.
 
-NNA also does not take into consideration the spatial patterns present at different scales. The next method we describes tackles this problem better.
+NNA also does not take into consideration the spatial patterns present at different scales. The next method we describe tackles this problem better.
 
 ## K-Function Analysis
 
@@ -169,7 +169,7 @@ K(d) = \frac{\frac{1}{n} \sum_{i=1}^{n}{S_{i}}}{\frac{n}{A}}
 $$
 Where \text{K}(d) is the K-function at distance $d$, $n$ is the number of total points or events, $S_{i}$ is the number of total *other* points or events at the circle around point $i$, each circle having radius $d$, and $A$ is the total area of the study region.
 
-The Kest() funciton in the spatstat.explore package we use to estimate the K-function in R, the K-function is defined as the following:
+The `Kest` funciton in the `spatstat.explore` package we use to estimate the K-function in R, the K-function is defined as the following:
 $$
 \hat{K}(r) = \frac{a}{n(n-1)} \sum_{i} \sum_{j} I(d_{ij} \leq r) e_{ij}
 $$
@@ -199,7 +199,7 @@ At scale $d$:
 
 It should be noted that in the ArcGIS Pro software, $L(d)$ has a different formula: $L(d) = \sqrt{\frac{K(d)}{\pi}}$, so CSR is at $d$, not 0. We are not using ArcGIS for our analysis and will use the first formula to calculate $L(d)$. 
 
-We use the Lest() function from the spatstat.explore package in R where the L-function is defined as follows:
+We use the `Lest` function from the spatstat.explore package in R where the L-function is defined as follows:
 $$
 L(r) = \sqrt{ \frac{K(r)} {\pi} }
 $$
@@ -210,7 +210,7 @@ where $K(r)$ is the K-function and $r$ is radius of the circle.
 
 When performing K-function and L-function analysis, researchers need to identify the range of distances that will be evaluated through the functions. Often the functions are iterated over 10-20 values of $d$, and researchers can pick the beginning value for $d$ and set the increments at which it should be increased, and/or designate the maximum value. 
 
-Usually, the maximum distance is calculated by dividing the maximum distance between two points in the dataset by 2 (max distance = half of the distance between the two farthest points). In R, the spatstat.explore manual tells us that there is a "sensible default", so it suffices to specify the rmax value (maximum distance).
+Usually, the maximum distance is calculated by dividing the maximum distance between two points in the dataset by 2 (max distance = half of the distance between the two farthest points). In R, the `spatstat.explore` manual tells us that there is a "sensible default", so it suffices to specify the `rmax` value (maximum distance).
 
 ### Significance Test and Envelopes
 
@@ -285,7 +285,7 @@ The Nearest Neighbor Analysis results in a nearest neighbor index (NNI) of 0.794
 ```{r NNA_spatialEco, echo=FALSE, results='hide'}
 spatialEco::nni(farmers_market[-41,], win = "hull")
 ```
-We also conducted the NNA with the nni() function in the spatialEco package. This method gave us a higher NNI of 1.136 with a z-score of 2.028 and a p-value of 0.043. In this case, NNI > 1 and z-score > 1.96, so we would reject the null hypothesis to favor the alternative hypothesis that we observe statistically significant dispersion. 
+We also conducted the NNA with the `nni` function in the `spatialEco` package. This method gave us a higher NNI of 1.136 with a z-score of 2.028 and a p-value of 0.043. In this case, NNI > 1 and z-score > 1.96, so we would reject the null hypothesis to favor the alternative hypothesis that we observe statistically significant dispersion. 
 
 We expect that this inconsistency between the two methods comes from the fact that our latter method does not accept a boundary argument and assumes a convex hull for study area. As a result, this method used an expected mean distance of 2,797 instead of 4,001 that we calculated for the former method. This is a result of one of the limitations of NNA that we discussed in the Methods section. Since the question we are trying to answer with this question is whether farmers markets are clustered in Philadelphia, our study area boundary is central to that question. The former method takes into consideration study area, so we focus on the results of that method.
 
@@ -332,7 +332,7 @@ K_cutoff <- data.frame(Kenv) %>%
                                .default = "CSR"))
 
 ```
-In our K-function analysis, we used a max distance of 28,500 ft since the two points that were furthest apart from each other were about 56,698 ft apart (rounded to 57,000 before dividing by 2). As stated in our methods section, we used the "best" method as the edge correction with 99 simulations (for a 99% confidence envelope).
+In our K-function analysis, we used a max distance of 28,500 ft since the two points that were furthest apart from each other were about 56,698 ft apart (rounded to 57,000 before dividing by 2). As stated in our methods section, we used the `best` method as the edge correction with 99 simulations (for a 99% confidence envelope).
 
 ```{r plotKFunction, fig.cap="Fig 3. Ripley's K-Function with Confidence Envelopes"}
 # plot Ripley's K-function with 90% simulation envelopes
@@ -429,7 +429,7 @@ As discussed in the methods section, when performing K-function analysis, we sho
 
 In general, both the Nearest Neighbor Analysis and K-Function Analysis lead us to the conclusion that there is some level of clustering in Philadelphia's Farmers Market locations. K-Function Analysis goes a step further than NNA and tells us that we specifically see clustering when zoomed out at a larger scale.
 
-These conclusions are consistent with what we can assume from taking a glance at the map of Philadelphia's farmers markets. From looking at something like figure 1, we can see that it looks like farmers markets are clustered around center city and that there are some clustered in the Northwestern part of Philadelphia as well. If we only zoom in on the convex hull of the observations of farmers markets, we can see that the distributions of markets look relatively random. This corresponds to the results of the K-function analysis at a smaller scale (distance < 3,000 ft) and of the spatialEco package nni() function that does not take into consideration study area.
+These conclusions are consistent with what we can assume from taking a glance at the map of Philadelphia's farmers markets. From looking at something like figure 1, we can see that it looks like farmers markets are clustered around center city and that there are some clustered in the Northwestern part of Philadelphia as well. If we only zoom in on the convex hull of the observations of farmers markets, we can see that the distributions of markets look relatively random. This corresponds to the results of the K-function analysis at a smaller scale (distance < 3,000 ft) and of the `spatialEco` package `nni` function that does not take into consideration study area.
 
 ```{r FM_map_income, fig.cap="Fig 6. Philadelphia Farmers Markets and Median HH Income by ZIP Code"}
 # create map
