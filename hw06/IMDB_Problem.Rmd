@@ -27,6 +27,7 @@ library(NbClust)
 library(stringr)
 library(dplyr)
 library(syuzhet)
+library(ggplot2)
 ```
 
 Now, it's time to load and preprocess the text of the books from www.gutenberg.org.
@@ -192,7 +193,7 @@ tm::inspect(dtm)
 This is an extremely large and sparse matrix and takes up a lot of data, so before turning it into a matrix object from a DocumentTermMatrix object, some trimming:
 
 ```{r trim}
-dtm_reduced <- removeSparseTerms(dtm, sparse = 0.999)  # Retain terms present in at least 0.1% of documents, so at least 50 reviews
+dtm_reduced <- removeSparseTerms(dtm, sparse = 0.995)  # Retain terms present in at least 0.5% of documents, so at least 250 reviews
 
 ```
 
@@ -203,7 +204,7 @@ m <- as.matrix(dtm_reduced)
 dim(m)
 ```
 
-Now, let's look at the term distribution. Note that all of these terms (words) appear in at least 50 documents (reviews), but how many times in each document does a term appear?
+Now, let's look at the term distribution. Note that all of these terms (words) appear in at least 250 documents (reviews), but how many times in each document does a term appear?
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
 
@@ -228,7 +229,7 @@ Some words occur in the 10s of thousands - but not all look like fillers.
 #one, like, just, even, really, well, also, much, still, say, now, though, actually, pretty, quite, however, may
 #but I think they may be important to show a reviewers feelings or hesitation
 
-myCorpus <- tm_map(myCorpus, removeWords,c("one", "also", "may","something","around","got","movies","films","made","make","thats","ive"))
+myCorpus <- tm_map(myCorpus, removeWords,c("one", "like", "just", "even", "time", "really", " see", "can", "much", "well", "get", "will", "also", "first", "dont", "movies", "made", "make", "films", "way", "watch", "many", "seen", "two", "character", "never", "know", "ever", "still", "say", "end", "something", "back", "watching", "thing", "doesnt", "now", "didnt", "years", "another", "though", "actually", "makes", "nothing", "find", "look", "going", "work", "lot", "every", "part", "cant", "want", "quite", "things", "seems", "around", "got", "take", "however", "fact", "give", "thought", "ive", "may", "without", "saw"))
 
 ```
 
