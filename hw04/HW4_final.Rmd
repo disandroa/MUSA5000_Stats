@@ -3,12 +3,12 @@ title: "Are Farmer's Markets in Philadelphia Completely Spatially Random?"
 author: "Akira Di Sandro, Sofia Fasullo, Amy Solano"
 date: "`r Sys.Date()`"
 output:
+  pdf_document:
+    toc: true
   html_document:
     toc: true
     toc_float: true
     code_folding: hide
-  pdf_document:
-    toc: true
 ---
 
 ```{r setup, include=FALSE}
@@ -199,7 +199,7 @@ At scale $d$:
 
 It should be noted that in the ArcGIS Pro software, $L(d)$ has a different formula: $L(d) = \sqrt{\frac{K(d)}{\pi}}$, so CSR is at $d$, not 0. We are not using ArcGIS for our analysis and will use the first formula to calculate $L(d)$. 
 
-We use the `Lest` function from the spatstat.explore package in R where the L-function is defined as follows:
+We use the `Lest` function from the `spatstat.explore` package in R where the L-function is defined as follows:
 $$
 L(r) = \sqrt{ \frac{K(r)} {\pi} }
 $$
