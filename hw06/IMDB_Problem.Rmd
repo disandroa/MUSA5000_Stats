@@ -37,6 +37,7 @@ library(words)
 library(NbClust)
 library(stringr)
 library(dplyr)
+library(ggplot2)
 library(syuzhet)
 library(ggplot2)
 ```
@@ -172,6 +173,7 @@ hist(word_counts,
 
 # Alternatively, use ggplot2 for more customization
 word_count_df <- data.frame(word_counts = word_counts)
+
 ggplot(word_count_df, aes(x = word_counts)) +
   geom_histogram(fill = "skyblue", color = "black") +
   labs(title = "Histogram of Word Counts per Document", 
