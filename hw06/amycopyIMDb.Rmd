@@ -299,19 +299,17 @@ nrc_sentiment <- get_nrc_sentiment(review_1$Term)
 word_count_asc <- word_count_df %>% 
   arrange(word_counts)
 
-short10_index <- as.numeric(rownames(word_count_asc)[1:10])
+short30_index <- as.numeric(rownames(word_count_asc)[1:30])
 
-short10 <- m[short10_index,]
+short30 <- m[short30_index,]
 
 # longest reviews
 word_count_desc <- word_count_df %>% 
   arrange(desc(word_counts))
 
-long10_index <- as.numeric(rownames(word_count_desc)[1:10])
-long10 <- m[long10_index,]
 
-long100_index <- as.numeric(rownames(word_count_desc)[1:100])
-long100 <- m[long100_index,]
+long30_index <- as.numeric(rownames(word_count_desc)[1:30])
+long30 <- m[long30_index,]
 ```
 
 
@@ -372,32 +370,17 @@ Remember that the first review got a "positive" in the original dataset - but al
 
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
-review_long1$afinn <- as.matrix(get_sentiment(review_long1$Term, method="afinn"))
-hist(review_long1$afinn)
 
-long10.df <- as.data.frame(t(long10)) %>% rownames_to_column(var = "Term") %>%
-  rename(rev01 = 2, rev02 = 3, rev03 = 4, rev04 = 5, rev05 = 6, rev06 = 7,
-         rev07 = 8, rev08 = 9, rev09 = 10, rev10 = 11)
-long10.df$afinn <- as.matrix(get_sentiment(long10.df$Term, method="afinn"))
-
-
-longdf2 <- data.frame(col = rownames(long10)[row(long10)],
-           Term = colnames(long10)[col(long10)], value = c(long10))
-longdf2$afinn <- as.matrix(get_sentiment(longdf2$Term, method="afinn"))
-longdf2.scores <- longdf2 %>% 
+longdf30 <- data.frame(col = rownames(long30)[row(long30)],
+           Term = colnames(long30)[col(long30)], value = c(long30))
+longdf30$afinn <- as.matrix(get_sentiment(longdf30$Term, method="afinn"))
+longdf30.scores <- longdf30 %>% 
   group_by(col) %>% 
   summarize(scorenet=sum(value*afinn),len=sum(value), score=scorenet/len)
 
-ggplot(longdf2.scores) +
-  geom_col(aes(x=col, y=score))+
-  labs(title="Average Sentiment Scores for 10 longest reviews", 
-  subtitle="Scores from AFINN lexicon",
-  x=NULL, y="Sentiment Score")+
-  theme_minimal()+
-  theme(axis.text.x = element_blank())
-ggplot(longdf2.scores) +
+ggplot(longdf30.scores) +
   geom_col(aes(x=col, y=scorenet))+
-  labs(title="Raw Sentiment Scores for 10 longest reviews", 
+  labs(title="Net Sentiment Scores for 30 longest reviews", 
   subtitle="Scores from AFINN lexicon",
   x=NULL, y="Sentiment Score")+
   theme_minimal()+
@@ -405,32 +388,20 @@ ggplot(longdf2.scores) +
 
 
 
-longdf100 <- data.frame(col = rownames(long100)[row(long100)],
-           Term = colnames(long100)[col(long100)], value = c(long100))
-longdf100$afinn <- as.matrix(get_sentiment(longdf100$Term, method="afinn"))
-longdf100.scores <- longdf100 %>% 
+shortdf30 <- data.frame(col = rownames(short30)[row(short30)],
+           Term = colnames(short30)[col(short30)], value = c(short30))
+shortdf30$afinn <- as.matrix(get_sentiment(shortdf30$Term, method="afinn"))
+shortdf30.scores <- shortdf30 %>% 
   group_by(col) %>% 
   summarize(scorenet=sum(value*afinn),len=sum(value), score=scorenet/len)
 
-ggplot(longdf100.scores) +
-  geom_col(aes(x=col, y=score))+
-  labs(title="Average Sentiment Scores for 100 longest reviews", 
-  subtitle="Scores from AFINN lexicon",
-  x=NULL, y="Sentiment Score")+
-  theme_minimal()+
-  theme(axis.text.x = element_blank())
-ggplot(longdf100.scores) +
+ggplot(shortdf30.scores) +
   geom_col(aes(x=col, y=scorenet))+
-  labs(title="Raw Sentiment Scores for 100 longest reviews", 
+  labs(title="Net Sentiment Scores for 30 shortest reviews", 
   subtitle="Scores from AFINN lexicon",
   x=NULL, y="Sentiment Score")+
   theme_minimal()+
   theme(axis.text.x = element_blank())
-
-
-usedonly_long1 <- review_long1 %>% 
-  filter(Term_Frequency > 0) %>%
-  summarize(score=sum(Term_Frequency*afinn)/sum(Term_Frequency)) 
 
 
 ```
