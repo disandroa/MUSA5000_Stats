@@ -299,6 +299,16 @@ syuzhet <- syuzhet::get_sentiment_dictionary(dictionary="syuzhet")
 head(syuzhet, n=20L)
 ```
 
+# shortest reviews
+
+
+
+# longest reviews
+
+
+
+
+
 Test first review
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
