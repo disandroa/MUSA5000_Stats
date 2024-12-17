@@ -308,8 +308,10 @@ word_count_desc <- word_count_df %>%
   arrange(desc(word_counts))
 
 long10_index <- as.numeric(rownames(word_count_desc)[1:10])
-
 long10 <- m[long10_index,]
+
+long100_index <- as.numeric(rownames(word_count_desc)[1:100])
+long100 <- m[long100_index,]
 ```
 
 
@@ -382,11 +384,44 @@ long10.df$afinn <- as.matrix(get_sentiment(long10.df$Term, method="afinn"))
 longdf2 <- data.frame(col = rownames(long10)[row(long10)],
            Term = colnames(long10)[col(long10)], value = c(long10))
 longdf2$afinn <- as.matrix(get_sentiment(longdf2$Term, method="afinn"))
-longdf2.scores <- longdf2 %>% group_by(col) %>% summarize(score=sum(value*afinn)/sum(value))
+longdf2.scores <- longdf2 %>% 
+  group_by(col) %>% 
+  summarize(scorenet=sum(value*afinn),len=sum(value), score=scorenet/len)
 
 ggplot(longdf2.scores) +
   geom_col(aes(x=col, y=score))+
   labs(title="Average Sentiment Scores for 10 longest reviews", 
+  subtitle="Scores from AFINN lexicon",
+  x=NULL, y="Sentiment Score")+
+  theme_minimal()+
+  theme(axis.text.x = element_blank())
+ggplot(longdf2.scores) +
+  geom_col(aes(x=col, y=scorenet))+
+  labs(title="Raw Sentiment Scores for 10 longest reviews", 
+  subtitle="Scores from AFINN lexicon",
+  x=NULL, y="Sentiment Score")+
+  theme_minimal()+
+  theme(axis.text.x = element_blank())
+
+
+
+longdf100 <- data.frame(col = rownames(long100)[row(long100)],
+           Term = colnames(long100)[col(long100)], value = c(long100))
+longdf100$afinn <- as.matrix(get_sentiment(longdf100$Term, method="afinn"))
+longdf100.scores <- longdf100 %>% 
+  group_by(col) %>% 
+  summarize(scorenet=sum(value*afinn),len=sum(value), score=scorenet/len)
+
+ggplot(longdf100.scores) +
+  geom_col(aes(x=col, y=score))+
+  labs(title="Average Sentiment Scores for 100 longest reviews", 
+  subtitle="Scores from AFINN lexicon",
+  x=NULL, y="Sentiment Score")+
+  theme_minimal()+
+  theme(axis.text.x = element_blank())
+ggplot(longdf100.scores) +
+  geom_col(aes(x=col, y=scorenet))+
+  labs(title="Raw Sentiment Scores for 100 longest reviews", 
   subtitle="Scores from AFINN lexicon",
   x=NULL, y="Sentiment Score")+
   theme_minimal()+
@@ -397,8 +432,6 @@ usedonly_long1 <- review_long1 %>%
   filter(Term_Frequency > 0) %>%
   summarize(score=sum(Term_Frequency*afinn)/sum(Term_Frequency)) 
 
-review_long1$bing <- as.matrix(get_sentiment(review_long1$Term, method="bing"))
-hist(review_long1$bing)
 
 ```
 
