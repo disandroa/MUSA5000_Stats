@@ -100,6 +100,7 @@ toSpace <- content_transformer(function(x, pattern) gsub(pattern, " ", x))
 remApostrophe <- content_transformer(function(x,pattern) gsub(pattern, "", x))
 #     Removing special characters
 myCorpus <- tm_map(myCorpus, toSpace, "@")
+myCorpus <- tm_map(myCorpus, toSpace, "</>")
 myCorpus <- tm_map(myCorpus, toSpace, "/")
 myCorpus <- tm_map(myCorpus, toSpace, "]")
 myCorpus <- tm_map(myCorpus, toSpace, "$")
