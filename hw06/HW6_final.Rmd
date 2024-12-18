@@ -11,9 +11,6 @@ output:
     toc: true
 ---
 
-The aim of this Markdown is to demonstrate the use of various text analysis tools in R, including text clustering, word clouds and sentiment analysis.
-
-## Data Description
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -29,6 +26,7 @@ library(NbClust)
 library(stringr)
 library(dplyr)
 library(ggplot2)
+library(ggpubr)
 library(tidyverse)
 library(syuzhet)
 
@@ -49,13 +47,17 @@ imdb_review_text <- imdb_df$review
 
 ## Introduction
 
+Movie reviews inform curious film enthusiasts about how the work impacted individuals and allow people to decide whether or not they want to see the movie and reflect on movies they have watched in a new way. **IMDB** (or the Internet Movie Database) is one of the most famous and commonly used databases for movies and TV shows in the US. Users can do anything from exploring the release calendar, learning what movies and shows are ranked at the top of the nation in the current moment or the past, and finding reviews. These reviews can range from a paragraph to essays in length, and are written in several languages other than English. 
+
+In this study, we investigate the question, do shorter movie reviews contain more words with stronger sentiment compared to longer movie reviews? Are shorter reviews able to inform readers quickly and able to influence their opinions on a movie with stronger words to make up for the lack of elaboration that longer reviews are able to provide? On one hand, with less space to elaborate, one may think that shorter reviews may use more emotionally charged and pointed vocabulary. On the other hand, longer reviews have more space to use more words with strong sentiments. For our study, we use a dataset of 50,000 English IMDB movie reviews. We first clean our data using processes described below in the methods section below before performing sentiment analyses on each of the thirty shortest and longest reviews. 
+
 ## Methods
 
 ### Data Preprocessing
 
 #### Corpus
 
-First, we want to convert our dataframe of movie reviews into a corpus. A text corpus (plural: _corpora_) "is a large and unstructured set of texts (nowadays usually electronically stored and processed) used to do statistical analysis and hypothesis testing, checking occurrences or validating linguistic rules within a specific language territory.” (https://guides.library.uq.edu.au/research-techniques/text-mining-analysis/language-corpora) In this assignment, we utilize the r package..t…m..[fix later] for converting our data to a corpus and the subsequent preprocessing and analyses. Once we have created the corpus, we also make sure to convert everything to lowercase using `content_transformer`  so that our analysis is not case-sensitive.
+First, we want to convert our dataframe of movie reviews into a corpus. A text corpus (plural: _corpora_) "is a large and unstructured set of texts (nowadays usually electronically stored and processed) used to do statistical analysis and hypothesis testing, checking occurrences or validating linguistic rules within a specific language territory.” In this assignment, we utilize the r package `tm` for converting our data to a corpus and the subsequent preprocessing and analyses. Once we have created the corpus, we also make sure to convert everything to lowercase using `content_transformer` so that our analysis is not case-sensitive.
 
 #### Punctuation and Special Characters
 
@@ -71,8 +73,21 @@ After removing punctuation and special characters, we also make sure to get rid 
 
 A shortcoming of stemming is the possibility that the ends of the words will be incorrectly or incompletely removed. In spite of this, this assignment favors stemming over other word-grouping techniques due to the simplicity of the operation for the purpose of analyzing movie reviews. Abnormal results of stemming are noted in the “Results” section. 
 
-Similar to stemming, **lemmatization** also groups similar words together in a corpus. Unlike stemming, which groups multiple forms of a word together by removing the suffix, lemmatization searches for a word’s _lemma_, or base or dictionary form, by conducting a more complete analysis of the words in the corpus (https://nlp.stanford.edu/IR-book/html/htmledition/stemming-and-lemmatization-1.html). This makes lemmatization more computationally demanding than stemming, but depending on the analysis, the performance differences are modeset. For this assignment, stemming is the better choice for grouping like words.
+Similar to stemming, **lemmatization** also groups similar words together in a corpus. Unlike stemming, which groups multiple forms of a word together by removing the suffix, lemmatization searches for a word’s _lemma_, or base or dictionary form, by conducting a more complete analysis of the words in the corpus. This makes lemmatization more computationally demanding than stemming, but depending on the analysis, the performance differences are modest. For this assignment, stemming is the better choice for grouping like words.
 
+### Word Clouds
+
+A word cloud gives us an alternate way of examining a list of words and their frequency of occurrence in a corpus. It shows us the words that appeared the most in a corpus by giving the most frequently used words a larger font size. Within the `wordcloud` function, we specify that only words that appear in **5,000 reviews of more** should appear in the word cloud, ensuring that the most relevant terms are displayed given that our corpus includes 50,000 reviews.
+
+### Sentiment Analysis
+
+After cleaning our corpus and simplifying it to the best of our abilities to only include relevant words with meaning that could be analyzed, we perform a **sentiment analysis**. A sentiment analysis takes a corpus as an input and uses a lexicon to determine what the overall tone of a corpus is. Sentiment analysis looks different depending on what lexicon the researcher decides to use. 
+
+A **lexicon** is a list or dictionary of words or phrases that is coded with a sentiment or emotion. Some lexicons such as the National Research Council (NRC) lexicon (also known as the EmoLex) provide a dictionary of words and their association to emotions (anger, joy, sadness, fear, disgust, anticipation, trust, and surprise) in addition to sentiment (positive or negative). Other lexicons use numeric values to code the intensity of the sentiment. Our study utilizes one such lexicon, the **AFINN lexicon** available in the `syuzhet` package. In the AFINN lexicon, each word is assigned a score ranging from negative (-5) to positive (5). Utilizing this lexicon allows us to compare sentiment across corpus entries of different lengths to answer the research question of whether shorter movie reviews contain more words with stronger sentiment compared to longer movie reviews.
+
+There are a couple limitations to sentiment analysis that are important to highlight. One such limitation is that positive and negative words may wash each other out when performing sentiment analysis on a big body of text, resulting in neutral overall sentiment. For this reason, sentiment analysis works best on smaller chunks of text since they are more likely to have a consistent sentiment throughout. In our analysis, we explore sentiments of movie reviews, which may have some mixed sentiments, but we assume that our reviews are short enough that the sentiment being communicated in each review is consistent. Additionally, sentiment analysis is not able to decipher things like sarcasm and negative words preceding words (that would flip the sentiment of the text). 
+
+To explore our research question, we take the 30 shortest and 30 longest reviews, after data cleaning. For each review, the sentiment score is calculated by taking the frequency of each word, multiplying it by the AFINN lexicon scores, and summing together all the word scores in a review. To account for the different lengths of the corpus entries, an average score is also calculated by dividing the sentiment score by the total number of words in the review. Calculating the average allows us to more meaningfully compare the reviews and see the intensity of the sentiment.
 
 ## Results
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
@@ -171,8 +186,6 @@ rownames(cs) <- dtm_reduced$dimnames$Terms
 hist(cs, breaks=100,main = "Histogram of word frequencies",xlab="Repition of word across all reviews",ylab="Number of words")                    #Let's look at some histograms/tabulations/word cloud of total term appearance. 
 
 ```
-### Word Cloud
-Some words occur in the 10s of thousands - but not all look like fillers.
 
 ```{r}
 
@@ -183,7 +196,6 @@ Some words occur in the 10s of thousands - but not all look like fillers.
 myCorpus <- tm_map(myCorpus, removeWords,c("one", "like", "just", "even", "time", "really", " see", "can", "much", "well", "get", "will", "also", "first", "dont", "movies", "made", "make", "films", "way", "watch", "many", "seen", "two", "character", "never", "know", "ever", "still", "say", "end", "something", "back", "watching", "thing", "doesnt", "now", "didnt", "years", "another", "though", "actually", "makes", "nothing", "find", "look", "going", "work", "lot", "every", "part", "cant", "want", "quite", "things", "seems", "around", "got", "take", "however", "fact", "give", "thought", "ive", "may", "without", "saw"))
 
 ```
-So the threshold will be set at 5000, a nice even number to limit the wordcloud to only the most used words
 
 ```{r wordcloud}
 
@@ -253,6 +265,29 @@ ggplot(shortdf30.scores) +
   theme_minimal()+
   theme(axis.text.x = element_blank())
 ```
+
+```{r}
+ggarrange(
+  ggplot(shortdf30.scores) +
+  geom_col(aes(x=col, y=score), fill = "skyblue", color = "black")+
+  ylim(-1, 2) +
+  labs(title="Average Sentiment Scores,\n30 shortest reviews", 
+  subtitle="Scores from AFINN lexicon",
+  x=NULL, y="Sentiment Score")+
+  theme_minimal()+
+  theme(axis.text.x = element_blank()),
+  
+  ggplot(longdf30.scores) +
+  geom_col(aes(x=col, y=score), fill = "skyblue", color = "black")+
+  ylim(-1, 2) +
+  labs(title="Average Sentiment Scores,\n30 longest reviews", 
+  subtitle="Scores from AFINN lexicon",
+  x=NULL, y=NULL)+
+  theme_minimal()+
+  theme(axis.text.x = element_blank())
+)
+```
+
 
 ## Discussion
 
