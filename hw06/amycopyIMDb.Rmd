@@ -407,6 +407,78 @@ ggplot(shortdf30.scores) +
 ```
 
 ```{r}
+library(ggpubr)
+
+ggarrange(
+  ggplot(shortdf30.scores) + 
+    geom_point(aes(x=len, y=scorenet)) + 
+    geom_hline(yintercept=0) + 
+    labs(title="Net score of 30 shortest reviews", x="Count of words in review")+
+    theme_classic(),
+  
+  ggplot(shortdf30.scores) + 
+    geom_point(aes(x=len, y=score)) + 
+    geom_hline(yintercept=0) + 
+    labs(title="Average score of 30 shortest reviews", x="Count of words in review")+
+    theme_classic(),
+  
+  ggplot(longdf30.scores) + 
+    geom_point(aes(x=len, y=scorenet)) + 
+    geom_hline(yintercept=0) + 
+    labs(title="Net score of 30 longest reviews", x="Count of words in review")+
+    theme_classic(),
+  
+  ggplot(longdf30.scores) + 
+    geom_point(aes(x=len, y=score)) + 
+    geom_hline(yintercept=0) + 
+    labs(title="Average score of 30 longest reviews", x="Count of words in review")+
+    theme_classic()
+  )
+
+ggarrange(
+  ggplot(shortdf30.scores) +
+  geom_col(aes(x=col, y=score))+
+  labs(title="Average Sentiment Scores,\n30 shortest reviews", 
+  subtitle="Scores from AFINN lexicon",
+  x=NULL, y="Sentiment Score")+
+  theme_minimal()+
+  theme(axis.text.x = element_blank()),
+  
+  ggplot(longdf30.scores) +
+  geom_col(aes(x=col, y=score))+
+  ylim(-1, 1.5) +
+  labs(title="Average Sentiment Scores,\n30 longest reviews", 
+  subtitle="Scores from AFINN lexicon",
+  x=NULL, y=NULL)+
+  theme_minimal()+
+  theme(axis.text.x = element_blank())
+)
+
+ggarrange(
+  ggplot(shortdf30.scores) +
+  geom_col(aes(x=col, y=scorenet))+
+  ylim(-100, 120) +
+  labs(title="Net Sentiment Scores,\n30 shortest reviews", 
+  subtitle="Scores from AFINN lexicon",
+  x=NULL, y="Sentiment Score")+
+  theme_minimal()+
+  theme(axis.text.x = element_blank()),
+  
+  ggplot(longdf30.scores) +
+  geom_col(aes(x=col, y=scorenet))+
+  ylim(-100, 120) +
+  labs(title="Net Sentiment Scores,\n30 longest reviews", 
+  subtitle="Scores from AFINN lexicon",
+  x=NULL, y=NULL)+
+  theme_minimal()+
+  theme(axis.text.x = element_blank())
+)
+
+```
+
+
+
+```{r}
 head(imdb_df$sentiment,1)
 
 ```

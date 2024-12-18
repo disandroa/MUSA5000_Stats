@@ -2,6 +2,20 @@
 title: "Are Farmer's Markets in Philadelphia Completely Spatially Random?"
 author: "Akira Di Sandro, Sofia Fasullo, Amy Solano"
 date: "`r Sys.Date()`"
+header-includes:
+- \usepackage{booktabs}
+- \usepackage{longtable}
+- \usepackage{array}
+- \usepackage{multirow}
+- \usepackage[table]{xcolor}
+- \usepackage{wrapfig}
+- \usepackage{dcolumn}
+- \usepackage{float}
+- \usepackage{colortbl}
+- \usepackage{pdflscape}
+- \usepackage{tabu}
+- \usepackage{threeparttable}
+- \usepackage[normalem]{ulem}
 output:
   pdf_document:
     toc: true
@@ -12,7 +26,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = T, eval = T, warning = F, message = F)
+knitr::opts_chunk$set(echo = F, eval = T, warning = F, message = F, fig.pos = "H", out.extra = "")
 
 # get rid of scientific notation
 options(scipen = 999)
@@ -50,7 +64,7 @@ hydro <- st_read("https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/servi
 Access to healthy, locally grown food remains a challenge for many American cities, including Philadelphia. To address this, the Philadelphia Food Trust has established numerous farmers markets across the city, providing benefits such as fresher, seasonal, and healthier foods; diverse offerings like organic produce and heritage meats; and opportunities for community interaction and outdoor activity. However, large parts of South, North, and all of Northeast Philadelphia lack farmers markets, leaving residents without these advantages. In this study, we analyze the spatial distribution of farmers markets in Philadelphia to determine whether they are randomly placed, dispersed, or clustered.
 
 
-```{r FMmap, fig.cap="Fig 1. Philadelphia Farmers Markets"}
+```{r FMmap, fig.cap="Philadelphia Farmers Markets"}
 # create map
 ggplot() +
   
@@ -290,7 +304,7 @@ We also conducted the NNA with the `nni` function in the `spatialEco` package. T
 We expect that this inconsistency between the two methods comes from the fact that our latter method does not accept a boundary argument and assumes a convex hull for study area. As a result, this method used an expected mean distance of 2,797 instead of 4,001 that we calculated for the former method. This is a result of one of the limitations of NNA that we discussed in the Methods section. Since the question we are trying to answer with this question is whether farmers markets are clustered in Philadelphia, our study area boundary is central to that question. The former method takes into consideration study area, so we focus on the results of that method.
 
 
-```{r kerneldensitymap, fig.cap="Fig 2. Kernel Density Plot of Philadelphia Farmers Markets"}
+```{r kerneldensitymap, fig.cap="Kernel Density Plot of Philadelphia Farmers Markets"}
 # prof did this with the base plot functions
 plot(density(FM_ppp),
      main = "Kernel Density Plot of Farmers Markets in Philadelphia")
@@ -302,6 +316,8 @@ plot(FM_ppp, add = T)
 Figure 2 shows a kernel density plot of Philadelphia farmers markets which, again, clearly highlight the lack of farmers markets in Northeast and South Philadelphia. It also shows that there is a cluster of farmers markets centered around Center City and another potential cluster around Northwest Philadelphia.
 
 ## K-Function Analysis
+
+In our K-function analysis, we used a max distance of 28,500 ft since the two points that were furthest apart from each other were about 56,698 ft apart (rounded to 57,000 before dividing by 2). As stated in our methods section, we used the `best` method as the edge correction with 99 simulations (for a 99% confidence envelope).
 
 ```{r kFunction, echo=FALSE, results='hide'}
 # find max distance between points
@@ -332,9 +348,7 @@ K_cutoff <- data.frame(Kenv) %>%
                                .default = "CSR"))
 
 ```
-In our K-function analysis, we used a max distance of 28,500 ft since the two points that were furthest apart from each other were about 56,698 ft apart (rounded to 57,000 before dividing by 2). As stated in our methods section, we used the `best` method as the edge correction with 99 simulations (for a 99% confidence envelope).
-
-```{r plotKFunction, fig.cap="Fig 3. Ripley's K-Function with Confidence Envelopes"}
+```{r plotKFunction, fig.cap="Figure 3: Ripley's K-Function with Confidence Envelopes"}
 # plot Ripley's K-function with 90% simulation envelopes
 plot(Kenv,
      xlab = "r", ylab = "Khat(r)", 
@@ -344,7 +358,10 @@ plot(Kenv,
 
 ```
 
+
 As shown in figure 3 above, the observed K-function is consistently above the expected K-function and the 99% envelopes. More specifically, until a distance of about 3,000 ft, we observe a random spatial pattern, but for distances greater than 3,000 ft, the observed $\hat{K}$ is greater than the theoretical $K$, meaning we observe clustering at these scales. 
+
+
 
 ```{r LFunction, echo=FALSE, results='hide'}
 # L Function
@@ -360,8 +377,7 @@ Lenv <- spatstat.explore::envelope(FM_ppp,
                                    nrank = 1)
 
 ```
-
-```{r LFunction_prettierplot, fig.cap="Fig 4. Ripley's L-Function with Confidence Envelopes"}
+```{r LFunction_prettierplot, fig.cap="Ripley's L-Function with Confidence Envelopes"}
 L2 <- Lenv 
 L2$obs <- L2$obs-L2$r
 L2$theo <- L2$theo-L2$r
@@ -381,11 +397,12 @@ plot(L2,
      cex.main = 1.5, lwd = 2)
 ```
 
-As shown in figure 4 above, the L-function plot shows us the same results as the K-function plot with the observed $\hat{L}(r)$ being within the 99% confidence envelope until $r$ > 2,700 ft at which $\hat{L}(r) > L^{+}(r)$, meaning there is statistically significant clustering at those larger scales. Note that there are also some distances < 2,700 ft at which $\hat{L}(r) > L^{+}(r)$, but for the most part, $\hat{L}(r)$ is the 99% confidence envelope at this range of $r$
+As shown in figure 4 above, the L-function plot shows us the same results as the K-function plot with the observed $\hat{L}(r)$ being within the 99% confidence envelope until $r$ > 2,700 ft at which $\hat{L}(r) > L^{+}(r)$, meaning there is statistically significant clustering at those larger scales. Note that there are also some distances < 2,700 ft at which $\hat{L}(r) > L^{+}(r)$, but for the most part, $\hat{L}(r)$ is the 99% confidence envelope at this range of $r$.
+
 
 According to these results, we fail to reject the null hypothesis at distances less than or equal to 3,000 ft, meaning that at this smaller scale, we see spatial randomness. At a mid to larger scale (distance > 3,000 ft), we reject the null hypothesis in favor of the alternative hypothesis (specifically, $H_{a1}$) and conclude that there is statistically significant spatial clustering.
 
-```{r popmap, fig.cap="Fig 5. Philadelphia Farmers Markets and Population by ZIP Code"}
+```{r popmap, fig.cap="Philadelphia Farmers Markets and Population by ZIP Code"}
 # create map
 ggplot() +
   
@@ -431,7 +448,7 @@ In general, both the Nearest Neighbor Analysis and K-Function Analysis lead us t
 
 These conclusions are consistent with what we can assume from taking a glance at the map of Philadelphia's farmers markets. From looking at something like figure 1, we can see that it looks like farmers markets are clustered around center city and that there are some clustered in the Northwestern part of Philadelphia as well. If we only zoom in on the convex hull of the observations of farmers markets, we can see that the distributions of markets look relatively random. This corresponds to the results of the K-function analysis at a smaller scale (distance < 3,000 ft) and of the `spatialEco` package `nni` function that does not take into consideration study area.
 
-```{r FM_map_income, fig.cap="Fig 6. Philadelphia Farmers Markets and Median HH Income by ZIP Code"}
+```{r FM_map_income, fig.cap="Philadelphia Farmers Markets and Median HH Income by ZIP Code"}
 # create map
 ggplot() +
   
@@ -469,7 +486,7 @@ ggplot() +
 
 ```
 
-Figure 6 (above) shows a map of Philadelphia with Farmers Market locations overlaid on a map of median household income (from 2000) by ZIP code. One might expect to see a cluster of farmers markets in more wealthy neighborhoods, but looking at this map, we see that Northeast Philadelphia (which is relatively wealthy) does not have any farmers markets, while some ZIP codes around Center City filled in with a darker color (indicating lower median household income) have several farmers markets. In South Philadelphia, the ZIP codes with no or few farmers markets seem to range from low to middle levels of median household income. In conclusion, it does not seem to be the case that median household income influences farmers market locations (though this may not be the case upon running actual statistical tests).
+Figure 6 shows a map of Philadelphia with Farmers Market locations overlaid on a map of median household income (from 2000) by ZIP code. One might expect to see a cluster of farmers markets in more wealthy neighborhoods, but looking at this map, we see that Northeast Philadelphia (which is relatively wealthy) does not have any farmers markets, while some ZIP codes around Center City filled in with a darker color (indicating lower median household income) have several farmers markets. In South Philadelphia, the ZIP codes with no or few farmers markets seem to range from low to middle levels of median household income. In conclusion, it does not seem to be the case that median household income influences farmers market locations (though this may not be the case upon running actual statistical tests).
 
 In conclusion, we can conclude that at a smaller scale, farmers markets are spatially random, but at larger scales, farmers markets seem to be clustered with a node around Center City and another node in Northwestern Philadelphia. These clusters do not seem to be influenced by Population nor Median household income (in the year 2000), but statistical tests need to be run to confirm this. Perhaps farmers markets are concentrated around more touristy and commonly frequented areas of Philadelphia. 
 
