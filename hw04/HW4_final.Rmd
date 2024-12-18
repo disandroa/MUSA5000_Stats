@@ -1,5 +1,5 @@
 ---
-title: "Are Farmer's Markets in Philadelphia Completely Spatially Random?"
+title: "Analyzing Spatial Patterns of Philadelphia Farmers Markets"
 author: "Akira Di Sandro, Sofia Fasullo, Amy Solano"
 date: "`r Sys.Date()`"
 header-includes:
