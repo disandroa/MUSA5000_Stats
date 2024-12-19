@@ -2,18 +2,31 @@
 title: "Text Analysis of IMDb Movie Reviews"
 author: "Akira Di Sandro, Sofia Fasullo, Amy Solano"
 date: "`r Sys.Date()`"
+header-includes:
+- \usepackage{booktabs}
+- \usepackage{longtable}
+- \usepackage{array}
+- \usepackage{multirow}
+- \usepackage[table]{xcolor}
+- \usepackage{wrapfig}
+- \usepackage{dcolumn}
+- \usepackage{float}
+- \usepackage{colortbl}
+- \usepackage{pdflscape}
+- \usepackage{tabu}
+- \usepackage{threeparttable}
+- \usepackage[normalem]{ulem}
 output:
+  pdf_document:
+    toc: true
   html_document:
     toc: true
     toc_float: true
     code_folding: hide
-  pdf_document:
-    toc: true
 ---
 
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
 
 #setwd("~/Documents/GitHub/MUSA5000_Stats/hw06")
 
@@ -29,8 +42,10 @@ library(ggplot2)
 library(ggpubr)
 library(tidyverse)
 library(syuzhet)
+library(formatR)
 
-knitr::opts_chunk$set(echo = T, eval = T, warning = F, message = F)
+knitr::opts_chunk$set(echo = F, eval = T, warning = F, message = F, fig.pos = "H", 
+                      out.extra = "", tidy.opts=list(width.cutoff=60),tidy=TRUE)
 
 # get rid of scientific notation
 options(scipen = 999)
@@ -45,27 +60,27 @@ imdb_df <- read.csv("Data/IMDB_Dataset.csv")
 imdb_review_text <- imdb_df$review
 ```
 
-## Introduction
+# Introduction
 
 Movie reviews inform curious film enthusiasts about how the work impacted individuals and allow people to decide whether or not they want to see the movie and reflect on movies they have watched in a new way. **IMDB** (or the Internet Movie Database) is one of the most famous and commonly used databases for movies and TV shows in the US. Users can do anything from exploring the release calendar, learning what movies and shows are ranked at the top of the nation in the current moment or the past, and finding reviews. These reviews can range from a paragraph to essays in length, and are written in several languages other than English. 
 
 In this study, we investigate the question, do shorter movie reviews contain more words with stronger sentiment compared to longer movie reviews? Are shorter reviews able to inform readers quickly and able to influence their opinions on a movie with stronger words to make up for the lack of elaboration that longer reviews are able to provide? On one hand, with less space to elaborate, one may think that shorter reviews may use more emotionally charged and pointed vocabulary. On the other hand, longer reviews have more space to use more words with strong sentiments. For our study, we use a dataset of 50,000 English IMDB movie reviews. We first clean our data using processes described below in the methods section below before performing sentiment analyses on each of the thirty shortest and longest reviews. 
 
-## Methods
+# Methods
 
-### Data Preprocessing
+## Data Preprocessing
 
-#### Corpus
+### Corpus
 
 First, we want to convert our dataframe of movie reviews into a corpus. A text corpus (plural: _corpora_) "is a large and unstructured set of texts (nowadays usually electronically stored and processed) used to do statistical analysis and hypothesis testing, checking occurrences or validating linguistic rules within a specific language territory.” In this assignment, we utilize the r package `tm` for converting our data to a corpus and the subsequent preprocessing and analyses. Once we have created the corpus, we also make sure to convert everything to lowercase using `content_transformer` so that our analysis is not case-sensitive.
 
-#### Punctuation and Special Characters
+### Punctuation and Special Characters
 
 Since our corpus entries all consist of a single line, concatenation — the process of joining separate strings into a single line — is not necessary and thus we do not perform it, though this step may be important for preprocessing corpora that include line breaks. The next necessary step once we have created our corpus and converted all words to lowercase is to remove special characters, numbers, and punctuation marks. 
 
 To do so, we create functions `toSpace` and `remApostrophe` that take special characters (e.g., **@**, **/**, **]**, **$**) as arguments, identifying instances of these characters in our corpus entries and replacing them with spaces. Other characters, like numbers and punctuation marks, can be removed using the `removeNumbers` and `removePunctuation` arguments within the `tm_map` function.
 
-#### Stop Words and Word Grouping
+### Stop Words and Word Grouping
 
 After removing punctuation and special characters, we also make sure to get rid of **stop words**. In the English language, there are many stop words such as, “as”, “and”, “in”, and “for”, which are commonly used words that don’t add useful information to the text overall. For this step, we used a predefined set of stop words from the `Snowball` package in R. We also removed several other neutral and common words in this corpus including words like, “movie”, “feature”, “screen”, “imdb”, and “film”.
 
@@ -75,11 +90,11 @@ A shortcoming of stemming is the possibility that the ends of the words will be 
 
 Similar to stemming, **lemmatization** also groups similar words together in a corpus. Unlike stemming, which groups multiple forms of a word together by removing the suffix, lemmatization searches for a word’s _lemma_, or base or dictionary form, by conducting a more complete analysis of the words in the corpus. This makes lemmatization more computationally demanding than stemming, but depending on the analysis, the performance differences are modest. For this assignment, stemming is the better choice for grouping like words.
 
-### Word Clouds
+## Word Clouds
 
 A word cloud gives us an alternate way of examining a list of words and their frequency of occurrence in a corpus. It shows us the words that appeared the most in a corpus by giving the most frequently used words a larger font size. Within the `wordcloud` function, we specify that only words that appear in **5,000 reviews of more** should appear in the word cloud, ensuring that the most relevant terms are displayed given that our corpus includes 50,000 reviews.
 
-### Sentiment Analysis
+## Sentiment Analysis
 
 After cleaning our corpus and simplifying it to the best of our abilities to only include relevant words with meaning that could be analyzed, we perform a **sentiment analysis**. A sentiment analysis takes a corpus as an input and uses a lexicon to determine what the overall tone of a corpus is. Sentiment analysis looks different depending on what lexicon the researcher decides to use. 
 
@@ -89,7 +104,7 @@ There are a couple limitations to sentiment analysis that are important to highl
 
 To explore our research question, we take the 30 shortest and 30 longest reviews, after data cleaning. For each review, the sentiment score is calculated by taking the frequency of each word, multiplying it by the AFINN lexicon scores, and summing together all the word scores in a review. To account for the different lengths of the corpus entries, an average score is also calculated by dividing the sentiment score by the total number of words in the review. Calculating the average allows us to more meaningfully compare the reviews and see the intensity of the sentiment.
 
-## Results
+# Results
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
 # Load and preprocess all text documents
 myCorpus <- tm::VCorpus(VectorSource(imdb_review_text))
@@ -107,7 +122,9 @@ for (i in 1:50000) {
   line_2[i] <- obj
 }
 ```
-### Data cleaning
+
+## Data cleaning
+
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
 #     Defining the toSpace function
 toSpace <- content_transformer(function(x, pattern) gsub(pattern, " ", x))
@@ -134,7 +151,7 @@ myCorpus <- tm_map(myCorpus, removePunctuation)
 #stopwords("english")
 myCorpus <- tm_map(myCorpus, removeWords, stopwords("english"))
 ```
-#### Document lengths, stemming, etc
+
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
 # removing self-defined stop words
 myCorpus <- tm_map(myCorpus, removeWords,c("movie", "film", "imdb", 
@@ -179,7 +196,7 @@ dtm_reduced <- removeSparseTerms(dtm, sparse = 0.995)  # Retain terms present in
 m <- as.matrix(dtm_reduced)
 
 ```
-### Word Cloud
+## Word Cloud
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
 
 cs <- as.matrix(colSums(m))             #How many times each term appears across all documents (texts)
@@ -190,9 +207,11 @@ hist(cs, breaks=100,main = "Histogram of word frequencies",xlab="Repition of wor
 ```
 
 Ideally, the word cloud should contain around 200 of the most commonly used words. From the histogram of word frequencies, it appears most words (terms) were repeated between 1-100x per review. There are some outliers as the histogram tapers to the right, so it may be that there are still filler words that need to be removed. 
-```{r, echo=TRUE}
+```{r, echo = T}
 
-myCorpus <- tm_map(myCorpus, removeWords,c("one", "like", "just", "even", "time", "really", " see", "can", "much", "well", "get", "will", "also", "first", "dont", "movies", "made", "make", "films", "way", "watch", "many", "seen", "two", "character", "never", "know", "ever", "still", "say", "end", "something", "back", "watching", "thing", "doesnt", "now", "didnt", "years", "another", "though", "actually", "makes", "nothing", "find", "look", "going", "work", "lot", "every", "part", "cant", "want", "quite", "things", "seems", "around", "got", "take", "however", "fact", "give", "thought", "ive", "may", "without", "saw"))
+myCorpus <- tm_map(myCorpus, removeWords,c("one", "like", "just", "even", "time", "really", " see", "can", "much", "well",
+                                           "get", "will", "also", "first", "dont", 
+                                           "movies", "made", "make", "films", "way", "watch", "many", "seen", "two", "character", "never", "know", "ever", "still", "say", "end", "something", "back", "watching", "thing", "doesnt", "now", "didnt", "years", "another", "though", "actually", "makes", "nothing", "find", "look", "going", "work", "lot", "every", "part", "cant", "want", "quite", "things", "seems", "around", "got", "take", "however", "fact", "give", "thought", "ive", "may", "without", "saw"))
 
 ```
 
@@ -206,7 +225,7 @@ After clearing out additional filler terms, the word cloud highlights terms like
 In the word cloud, we also observe some of the negative outcomes of stemming with the word "scene" and "scenes" both appearing, despite having the same stem. The stemming function failed to properly split these words.
 
 
-### Sentiment Analysis
+## Sentiment Analysis
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
 nrc <- syuzhet::get_sentiment_dictionary(dictionary="nrc")
@@ -243,23 +262,21 @@ longdf30.scores <- longdf30 %>%
   group_by(col) %>% 
   summarize(scorenet=sum(value*afinn),len=sum(value), score=scorenet/len)
 
-ggplot(longdf30.scores) +
-  geom_col(aes(x=col, y=scorenet), fill = "skyblue", color = "black")+
-  labs(title="Net Sentiment Scores for 30 longest reviews", 
-  subtitle="Scores from AFINN lexicon",
-  x=NULL, y="Sentiment Score")+
-  theme_minimal()+
-  theme(axis.text.x = element_blank())
-
-```
-
-``` {r warning=FALSE, message=FALSE, cache=FALSE}
 shortdf30 <- data.frame(col = rownames(short30)[row(short30)],
            Term = colnames(short30)[col(short30)], value = c(short30))
 shortdf30$afinn <- as.matrix(get_sentiment(shortdf30$Term, method="afinn"))
 shortdf30.scores <- shortdf30 %>% 
   group_by(col) %>% 
   summarize(scorenet=sum(value*afinn),len=sum(value), score=scorenet/len)
+
+ggarrange(nrow=2,
+  ggplot(longdf30.scores) +
+  geom_col(aes(x=col, y=scorenet), fill = "skyblue", color = "black")+
+  labs(title="Net Sentiment Scores for 30 longest reviews", 
+  subtitle="Scores from AFINN lexicon",
+  x=NULL, y="Sentiment Score")+
+  theme_minimal()+
+  theme(axis.text.x = element_blank()),
 
 ggplot(shortdf30.scores) +
   geom_col(aes(x=col, y=scorenet), fill = "skyblue", color = "black")+
@@ -268,7 +285,9 @@ ggplot(shortdf30.scores) +
   x=NULL, y="Sentiment Score")+
   theme_minimal()+
   theme(axis.text.x = element_blank())
+)
 ```
+
 
 The above plots show the results of our sentiment analysis as the net score for each review in the 30 longest and 30 shortest reviews. The combined scores for the shortest reviews only go as high as ten, which makes sense given the low word counts. The scores for the longest reviews still have low scores, but the range is wider on both the positive and negative end. The following graphs look at the average score, the sentiment divided by the word count, side-by-side on the same scale.
 
@@ -294,13 +313,14 @@ ggarrange(
 )
 ```
 
+
 Looking at the averages, the shorter reviews have a greater range on both the positive and negative ends compared to the longest reviews. All of the scores for the longest reviews fall between -0.5 and 0.5, while the shortest reviews range from -1 to 2. This suggests that the shorter reviews may convey sentiment more effectively, though it may also be true that the shorter length may play a part in the score due to the process of calculating averages.
 
-## Discussion
+# Discussion
 
 Our corpus as a whole contains long and short reviews with a range of sentiment scores. Our word cloud suggests that the production of a film or show is very important in the review process. Our sentiment analysis suggests that longer reviews use fewer words of more intense sentiment and thus do not lean strongly towards positive or negative. One thing our analysis did not consider was the existence of mixed reviews, which are quite common in the entertainment industry. In the future, we could use different lexicons to more effectively capture mixed and neutral reviews, looking more at frequency of a certain type of review in addition to the scores used in this review. We could also use more reviews to help us answer our research question, using a word count threshold rather than cutting off at a certain number. While our sentiment analysis did answer our research question, our word cloud and the consideration of mixed reviews leaves room for further exploration of our research question, using different methods that could capture more nuance in the reviews.
 
-## References
+# References
 
 1. Hill, Chelsey. 2023. "Sentiment Analysis (Lexicons)". Rstudio-Pubs-Static.S3.Amazonaws.Com. https://rstudio-pubs-static.s3.amazonaws.com/676279_2fa8c2a7a3da4e7089e24442758e9d1b.html.
 
